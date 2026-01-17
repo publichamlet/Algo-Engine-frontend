@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backtest UI - Algo Trading Platform</title>
+
+    <!-- TradingView Lightweight Charts -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+
+    <!-- External Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="logo-icon">📈</span>
+                    Backtest Runner
+                </h1>
+                <p class="header-subtitle">Broker-Agnostic Algo Trading Backtester</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Left Sidebar - Form -->
+            <aside class="form-sidebar">
+                <form id="backtestForm" class="backtest-form">
+                    <!-- Common Fields Section -->
+                    <fieldset class="form-section">
+                        <legend class="form-legend">Market & Time</legend>
+
+                        <div class="form-group">
+                            <label for="broker" class="form-label">Broker</label>
+                            <select id="broker" name="broker" class="form-control" required>
+                                <option value="angelone">Angel One</option>
+                                <option value="zerodha">Zerodha</option>
+                                <option value="alice_blue">Alice Blue</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="instrument" class="form-label">Instrument</label>
+                            <input type="text" id="instrument" name="instrument_id" class="form-control"
+                                placeholder="e.g., NSE:INFY-EQ" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="timeframe" class="form-label">Timeframe</label>
+                            <select id="timeframe" name="timeframe" class="form-control" required>
+                                <option value="1m">1 Minute</option>
+                                <option value="3m">3 Minutes</option>
+                                <option value="5m" selected>5 Minutes</option>
+                                <option value="15m">15 Minutes</option>
+                                <option value="1h">1 Hour</option>
+                                <option value="4h">4 Hours</option>
+                                <option value="1d">1 Day</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="startIst" class="form-label">Start Time (IST)</label>
+                            <input type="datetime-local" id="startIst" name="start_ist" class="form-control" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endIst" class="form-label">End Time (IST)</label>
+                            <input type="datetime-local" id="endIst" name="end_ist" class="form-control" required />
+                        </div>
+                    </fieldset>
+
+                    <!-- Trading Setup Section -->
+                    <fieldset class="form-section">
+                        <legend class="form-legend">Trading Setup</legend>
+
+                        <div class="form-group">
+                            <label for="capital" class="form-label">Capital (₹)</label>
+                            <input type="number" id="capital" name="capital" class="form-control" value="100000" min="1"
+                                required />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="qty" class="form-label">Quantity</label>
+                            <input type="number" id="qty" name="qty" class="form-control" value="1" min="1" required />
+                        </div>
+                    </fieldset>
+
+                    <!-- Strategy Section -->
+                    <fieldset class="form-section">
+                        <legend class="form-legend">Strategy</legend>
+
+                        <div class="form-group">
+                            <label for="strategy" class="form-label">Strategy Name</label>
+                            <select id="strategy" name="strategy" class="form-control" required>
+                                <option value="ema_crossover" selected>EMA Crossover</option>
+                                <option value="rsi_mean_reversion">RSI Mean Reversion</option>
+                            </select>
+                        </div>
+
+                        <!-- EMA Crossover Params (visible by default) -->
+                        <div id="ema_crossover_params" class="strategy-params">
+                            <div class="form-group">
+                                <label for="emaFast" class="form-label">EMA Fast Period</label>
+                                <input type="number" id="emaFast" name="ema_fast" class="form-control" value="9"
+                                    min="1" />
+                            </div>
+                            <div class="form-group">
+                                <label for="emaSlow" class="form-label">EMA Slow Period</label>
+                                <input type="number" id="emaSlow" name="ema_slow" class="form-control" value="21"
+                                    min="1" />
+                            </div>
+                        </div>
+
+                        <!-- RSI Mean Reversion Params (hidden by default) -->
+                        <div id="rsi_mean_reversion_params" class="strategy-params hidden">
+                            <div class="form-group">
+                                <label for="rsiPeriod" class="form-label">RSI Period</label>
+                                <input type="number" id="rsiPeriod" name="rsi_period" class="form-control" value="14"
+                                    min="1" />
+                            </div>
+                            <div class="form-group">
+                                <label for="rsiEntry" class="form-label">RSI Entry Level</label>
+                                <input type="number" id="rsiEntry" name="rsi_entry" class="form-control" value="30"
+                                    min="0" max="100" />
+                            </div>
+                            <div class="form-group">
+                                <label for="rsiExit" class="form-label">RSI Exit Level</label>
+                                <input type="number" id="rsiExit" name="rsi_exit" class="form-control" value="55"
+                                    min="0" max="100" />
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Feature Pack & Export -->
+                    <fieldset class="form-section">
+                        <legend class="form-legend">Options</legend>
+
+                        <div class="form-group">
+                            <label for="featurePack" class="form-label">Feature Pack</label>
+                            <select id="featurePack" name="feature_pack" class="form-control">
+                                <option value="default" selected>Default (ON)</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group-checkbox">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="saveJson" name="save_json" class="checkbox-input" />
+                                <span class="checkbox-text">Export JSON</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group-checkbox">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="saveParquet" name="save_parquet" class="checkbox-input" />
+                                <span class="checkbox-text">Export Parquet</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button type="submit" id="runBtn" class="btn btn-primary btn-lg btn-run">
+                            <span class="btn-icon">▶</span> Run Backtest
+                        </button>
+                        <button type="reset" class="btn btn-secondary btn-lg">
+                            <span class="btn-icon">↻</span> Reset
+                        </button>
+                        <button type="button" id="deleteBtn" class="btn btn-danger btn-lg" disabled>
+                            <span class="btn-icon">🗑</span> Delete Run
+                        </button>
+                    </div>
+                </form>
+            </aside>
+
+            <!-- Right Content Area -->
+            <section class="content-area">
+                <!-- Loading Overlay -->
+                <div id="loadingOverlay" class="loading-overlay hidden">
+                    <div class="spinner-container">
+                        <div class="spinner"></div>
+                        <p class="spinner-text">Running Backtest...</p>
+                    </div>
+                </div>
+
+                <!-- Error Banner -->
+                <div id="errorBanner" class="error-banner hidden">
+                    <div class="error-content">
+                        <span class="error-icon">⚠️</span>
+                        <p id="errorMessage" class="error-message"></p>
+                        <button type="button" class="error-close"
+                            onclick="document.getElementById('errorBanner').classList.add('hidden')">✕</button>
+                    </div>
+                </div>
+
+                <!-- Success Banner -->
+                <div id="successBanner" class="success-banner hidden">
+                    <div class="success-content">
+                        <span class="success-icon">✓</span>
+                        <p id="successMessage" class="success-message"></p>
+                    </div>
+                </div>
+
+                <!-- Results Section (initially hidden) -->
+                <div id="resultsContainer" class="results-container hidden">
+                    <!-- KPI Summary Cards -->
+                    <section class="kpi-section">
+                        <h2 class="section-title">Summary</h2>
+                        <div class="kpi-grid">
+                            <div class="kpi-card">
+                                <div class="kpi-label">Total Trades</div>
+                                <div class="kpi-value" id="kpiTotalTrades">-</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Win Rate</div>
+                                <div class="kpi-value" id="kpiWinRate">-</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Winning Trades</div>
+                                <div class="kpi-value" id="kpiWinningTrades">-</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Losing Trades</div>
+                                <div class="kpi-value" id="kpiLosingTrades">-</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Gross PnL</div>
+                                <div class="kpi-value" id="kpiGrossPnl">-</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Total Charges</div>
+                                <div class="kpi-value" id="kpiCharges">-</div>
+                            </div>
+                            <div class="kpi-card kpi-primary">
+                                <div class="kpi-label">Net PnL</div>
+                                <div class="kpi-value" id="kpiNetPnl">-</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Starting Capital</div>
+                                <div class="kpi-value" id="kpiStartingCapital">-</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">Ending Capital</div>
+                                <div class="kpi-value" id="kpiEndingCapital">-</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Chart Section -->
+                    <section class="chart-section">
+                        <div class="chart-header">
+                            <h2 class="section-title">Price Chart & Trades</h2>
+                            <button type="button" class="btn btn-sm btn-outline" id="enlargeChartBtn">
+                                <span class="btn-icon">⛶</span> Full Screen
+                            </button>
+                        </div>
+                        <div id="chartContainer" class="chart-container"></div>
+                    </section>
+
+                    <!-- Trades Table Section -->
+                    <section class="trades-section">
+                        <h2 class="section-title">Trade Details</h2>
+                        <div class="table-wrapper">
+                            <table id="tradesTable" class="trades-table">
+                                <thead>
+                                    <tr>
+                                        <th>Entry Time</th>
+                                        <th>Entry Price</th>
+                                        <th>Exit Time</th>
+                                        <th>Exit Price</th>
+                                        <th>Qty</th>
+                                        <th>Gross PnL</th>
+                                        <th>Charges</th>
+                                        <th>Net PnL</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tradesTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <h2 class="empty-state-title">No Results Yet</h2>
+                    <p class="empty-state-text">Configure your parameters and run a backtest to see results.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Back to Top Button -->
+        <button id="backToTopBtn" class="back-to-top-btn hidden" title="Back to Top">
+            <span class="back-to-top-icon">↑</span>
+        </button>
+
+        <!-- Signals Modal -->
+        <div id="signalsModal" class="modal hidden">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2 class="modal-title">Trade Signals</h2>
+                    <button type="button" class="modal-close" data-modal="signalsModal">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div id="signalsContent" class="signals-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enlarged Chart Modal -->
+        <div id="chartModal" class="modal hidden">
+            <div class="modal-content modal-fullscreen">
+                <div class="modal-header">
+                    <h2 class="modal-title">Chart View</h2>
+                    <button type="button" class="modal-close" data-modal="chartModal">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div id="chartModalContainer" class="chart-container-fullscreen"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmation Dialog -->
+        <div id="confirmDialog" class="modal hidden">
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h2 class="modal-title">Confirm Action</h2>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage" class="confirm-message"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="confirmCancel">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmOk">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Beplus Algo Trade. All rights reserved.</p>
+    </footer>
+
+    <!-- Application Script -->
+    <script src="dummy-data.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
