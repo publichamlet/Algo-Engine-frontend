@@ -10,65 +10,34 @@ const state = {
     tooltipElement: null,
 };
 
-// ===== DUMMY RESPONSE FOR OFFLINE TESTING =====
-/* const DUMMY_RESPONSE = {
-    run_id: "dummy-123-abc",
-    summary: {
-        total_trades: 5,
-        winning_trades: 3,
-        losing_trades: 2,
-        win_rate_pct: 60.0,
-        gross_pnl: 1500.75,
-        total_charges: 250.50,
-        net_pnl: 1250.25,
-        starting_capital: 100000,
-        ending_capital: 101250.25
-    },
-    candles: [
-        { ts: "2026-01-02T09:15:00+05:30", open: 1800, high: 1810, low: 1795, close: 1805, volume: 1000 },
-        { ts: "2026-01-02T09:20:00+05:30", open: 1805, high: 1820, low: 1800, close: 1815, volume: 1200 },
-        { ts: "2026-01-02T09:25:00+05:30", open: 1815, high: 1825, low: 1810, close: 1820, volume: 1500 },
-        { ts: "2026-01-02T09:30:00+05:30", open: 1820, high: 1830, low: 1815, close: 1825, volume: 1100 },
-        { ts: "2026-01-02T09:35:00+05:30", open: 1825, high: 1835, low: 1820, close: 1830, volume: 1300 },
-        { ts: "2026-01-02T09:40:00+05:30", open: 1830, high: 1840, low: 1825, close: 1835, volume: 1400 },
-        { ts: "2026-01-02T09:45:00+05:30", open: 1835, high: 1850, low: 1830, close: 1845, volume: 2000 },
-    ],
-    trades: [
-        {
-            entry_ts: "2026-01-02T09:15:00+05:30",
-            entry_price: 1800,
-            exit_ts: "2026-01-02T09:25:00+05:30",
-            exit_price: 1820,
-            net_pnl: 200,
-            qty: 1,
-            gross_pnl: 200,
-            charges: 0,
-            signals_json: '{"signal": "buy_ema_crossover"}',
-            entry_signals_json: '{"ema_fast": 1795, "ema_slow": 1790}',
-            exit_signals_json: '{"ema_fast": 1825, "ema_slow": 1810}'
-        },
-        {
-            entry_ts: "2026-01-02T09:30:00+05:30",
-            entry_price: 1820,
-            exit_ts: "2026-01-02T09:40:00+05:30",
-            exit_price: 1835,
-            net_pnl: 300,
-            qty: 1,
-            gross_pnl: 300,
-            charges: 0,
-            signals_json: '{"signal": "buy_ema_crossover"}',
-            entry_signals_json: '{"ema_fast": 1825, "ema_slow": 1810}',
-            exit_signals_json: '{"ema_fast": 1840, "ema_slow": 1820}'
-        }
-    ],
-    exports: {
-        manifest_path: "data/exports/backtests/runs/dummy-123-abc__manifest.json",
-        trades_json: "dummy-trades.json",
-        candles_json: "dummy-candles.json"
-    }
-}; */
-
 // ===== UTILITY FUNCTIONS =====
+
+/**
+ * Convert an ISO string like "2026-01-15T15:10:00+05:30"
+ * into a UTC timestamp (seconds) that preserves the *wall-clock time*
+ * shown in the string, without shifting to the viewer's timezone.
+ *
+ * Example:
+ *  "2026-01-15T15:10:00+05:30" -> chart will display 15:10 (not 09:40)
+ */
+function isoToWallClockUtcSeconds(isoString) {
+    // We intentionally IGNORE the offset part (+05:30) for chart display,
+    // because the user wants the same time shown in the response.
+    //
+    // Step 1: Extract "YYYY-MM-DDTHH:mm:ss"
+    const base = String(isoString).slice(0, 19); // "2026-01-15T15:10:00"
+
+    // Step 2: Parse components
+    const year = parseInt(base.slice(0, 4), 10);
+    const month = parseInt(base.slice(5, 7), 10);   // 1-12
+    const day = parseInt(base.slice(8, 10), 10);
+    const hour = parseInt(base.slice(11, 13), 10);
+    const min = parseInt(base.slice(14, 16), 10);
+    const sec = parseInt(base.slice(17, 19), 10);
+
+    // Step 3: Create a UTC timestamp for that same wall-clock time
+    return Math.floor(Date.UTC(year, month - 1, day, hour, min, sec) / 1000);
+}
 
 /**
  * Show error banner with message
@@ -192,36 +161,35 @@ function validateForm(formData) {
 
 /**
  * Build API payload from form
+ * Uses dynamic strategy params from config.js (readStrategyParamsFromUI)
  */
 function buildPayload() {
     const form = document.getElementById('backtestForm');
     const formData = new FormData(form);
-    
-    const strategy = formData.get('strategy');
-    const params = {};
-
-    if (strategy === 'ema_crossover') {
-        params.ema_fast = parseInt(formData.get('ema_fast')) || 9;
-        params.ema_slow = parseInt(formData.get('ema_slow')) || 21;
-    } else if (strategy === 'rsi_mean_reversion') {
-        params.rsi_period = parseInt(formData.get('rsi_period')) || 14;
-        params.rsi_entry = parseInt(formData.get('rsi_entry')) || 30;
-        params.rsi_exit = parseInt(formData.get('rsi_exit')) || 55;
-    }
+    const selectedInstrument = formData.get("instrument_id");
+    const instrument_id =
+    (!selectedInstrument && window.__strategyDefaultInstrumentId)
+        ? window.__strategyDefaultInstrumentId
+        : selectedInstrument;
 
     return {
         broker: formData.get('broker'),
-        instrument_id: formData.get('instrument_id'),
+        instrument_id,
         timeframe: formData.get('timeframe'),
         start_ist: formData.get('start_ist'),
         end_ist: formData.get('end_ist'),
-        strategy: strategy,
-        params: params,
-        capital: parseInt(formData.get('capital')),
-        qty: parseInt(formData.get('qty')),
-        feature_pack: formData.get('feature_pack'),
-        save_json: formData.get('save_json') === 'on',
-        save_parquet: formData.get('save_parquet') === 'on'
+        strategy: formData.get('strategy'),
+
+        // ✅ NEW: dynamic params (comes from config.js)
+        params: (typeof readStrategyParamsFromUI === "function")
+            ? readStrategyParamsFromUI()
+            : {},
+
+        capital: parseInt(formData.get('capital')) || 0,
+        qty: parseInt(formData.get('qty')) || 0,
+        feature_pack: formData.get('feature_pack') || "default"
+
+        // ❌ Remove save_json/save_parquet flags (as per new backend design)
     };
 }
 
@@ -230,6 +198,7 @@ function buildPayload() {
  */
 async function runBacktest() {
     const payload = buildPayload();
+    console.log('Running backtest with payload:', payload);
     const validation = validateForm(payload);
 
     if (!validation.isValid) {
@@ -327,7 +296,7 @@ function renderChart(container, candles, trades) {
 
     // Convert candles
     const chartCandles = candles.map(c => ({
-        time: new Date(c.ts).getTime() / 1000,
+        time: isoToWallClockUtcSeconds(c.ts),
         open: c.open,
         high: c.high,
         low: c.low,
@@ -341,8 +310,8 @@ function renderChart(container, candles, trades) {
 
     const markers = [];
     trades.forEach(trade => {
-        const entryTime = new Date(trade.entry_ts).getTime() / 1000;
-        const exitTime = new Date(trade.exit_ts).getTime() / 1000;
+        const entryTime = isoToWallClockUtcSeconds(trade.entry_ts);
+        const exitTime = isoToWallClockUtcSeconds(trade.exit_ts);
         const isProfitable = trade.net_pnl >= 0;
 
         // console.log('trade signal:', trade.entry_signals_json);
@@ -442,7 +411,7 @@ function renderChartInModal(container, candles, trades) {
     });
 
     const chartCandles = candles.map(c => ({
-        time: new Date(c.ts).getTime() / 1000,
+        time: isoToWallClockUtcSeconds(c.ts),
         open: c.open,
         high: c.high,
         low: c.low,
@@ -456,8 +425,8 @@ function renderChartInModal(container, candles, trades) {
 
     const markers = [];
     trades.forEach(trade => {
-        const entryTime = new Date(trade.entry_ts).getTime() / 1000;
-        const exitTime = new Date(trade.exit_ts).getTime() / 1000;
+        const entryTime = isoToWallClockUtcSeconds(trade.entry_ts);
+        const exitTime = isoToWallClockUtcSeconds(trade.exit_ts);
         const isProfitable = trade.net_pnl >= 0;
 
         // Register markers for tooltip lookup
@@ -681,18 +650,6 @@ async function deleteRun() {
     };
 }
 
-/**
- * Enlarge chart in modal
- */
-/* function enlargeChart() {
-    openModal('chartModal');
-    setTimeout(() => {
-        const container = document.getElementById('chartModalContainer');
-        if (state.currentData) {
-            renderChart(container, state.currentData.candles, state.currentData.trades);
-        }
-    }, 100);
-} */
 function enlargeChart() {
     openModal('chartModal');
     setTimeout(() => {
@@ -716,30 +673,23 @@ const chartModalContainer = document.getElementById("chartModalContainer");
 let lastMouse = { x: 0, y: 0 };
 
 chartContainer.addEventListener("mousemove", (e) => {
-  lastMouse.x = e.clientX;   // viewport coords
-  lastMouse.y = e.clientY;
+    lastMouse.x = e.clientX;   // viewport coords
+    lastMouse.y = e.clientY;
 });
 
 chartModalContainer.addEventListener("mousemove", (e) => {
-  lastMouse.x = e.clientX;   // viewport coords
-  lastMouse.y = e.clientY;
+    lastMouse.x = e.clientX;   // viewport coords
+    lastMouse.y = e.clientY;
 });
 
 chartContainer.addEventListener("mouseleave", () => {
-  hideTooltip();
+    hideTooltip();
 });
 
 // Form submission
 document.getElementById('backtestForm').addEventListener('submit', (e) => {
     e.preventDefault();
     runBacktest();
-});
-
-// Strategy change - show/hide params
-document.getElementById('strategy').addEventListener('change', (e) => {
-    const strategy = e.target.value;
-    document.getElementById('ema_crossover_params').classList.toggle('hidden', strategy !== 'ema_crossover');
-    document.getElementById('rsi_mean_reversion_params').classList.toggle('hidden', strategy !== 'rsi_mean_reversion');
 });
 
 // Delete button
@@ -800,5 +750,5 @@ document.addEventListener('keydown', (e) => {
 
 // Optional: Load dummy data on startup for testing (comment out for production)
 // Uncomment the line below to test the UI with dummy data
-window.addEventListener('load', () => { state.currentData = DUMMY_RESPONSE; renderResults(DUMMY_RESPONSE); document.getElementById('deleteBtn').disabled = false; });
+// window.addEventListener('load', () => { state.currentData = DUMMY_RESPONSE; renderResults(DUMMY_RESPONSE); document.getElementById('deleteBtn').disabled = false; });
 // 

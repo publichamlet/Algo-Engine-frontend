@@ -38,18 +38,12 @@
 
                         <div class="form-group">
                             <label for="broker" class="form-label">Broker</label>
-                            <select id="broker" name="broker" class="form-control" required>
-                                <option value="angelone">Angel One</option>
-                                <option value="zerodha">Zerodha</option>
-                                <option value="alice_blue">Alice Blue</option>
-                                <option value="other">Other</option>
-                            </select>
+                            <select id="broker" name="broker" class="form-control" required></select>
                         </div>
 
-                        <div class="form-group">
+                        <div id="instrumentGroup" class="form-group">
                             <label for="instrument" class="form-label">Instrument</label>
-                            <input type="text" id="instrument" name="instrument_id" class="form-control"
-                                placeholder="e.g., NSE:INFY-EQ" required />
+                            <select id="instrument" name="instrument_id" class="form-control" required></select>
                         </div>
 
                         <div class="form-group">
@@ -98,44 +92,12 @@
 
                         <div class="form-group">
                             <label for="strategy" class="form-label">Strategy Name</label>
-                            <select id="strategy" name="strategy" class="form-control" required>
-                                <option value="ema_crossover" selected>EMA Crossover</option>
-                                <option value="rsi_mean_reversion">RSI Mean Reversion</option>
-                            </select>
+                            <!-- options will be populated from JSON -->
+                            <select id="strategy" name="strategy" class="form-control" required></select>
                         </div>
 
-                        <!-- EMA Crossover Params (visible by default) -->
-                        <div id="ema_crossover_params" class="strategy-params">
-                            <div class="form-group">
-                                <label for="emaFast" class="form-label">EMA Fast Period</label>
-                                <input type="number" id="emaFast" name="ema_fast" class="form-control" value="9"
-                                    min="1" />
-                            </div>
-                            <div class="form-group">
-                                <label for="emaSlow" class="form-label">EMA Slow Period</label>
-                                <input type="number" id="emaSlow" name="ema_slow" class="form-control" value="21"
-                                    min="1" />
-                            </div>
-                        </div>
-
-                        <!-- RSI Mean Reversion Params (hidden by default) -->
-                        <div id="rsi_mean_reversion_params" class="strategy-params hidden">
-                            <div class="form-group">
-                                <label for="rsiPeriod" class="form-label">RSI Period</label>
-                                <input type="number" id="rsiPeriod" name="rsi_period" class="form-control" value="14"
-                                    min="1" />
-                            </div>
-                            <div class="form-group">
-                                <label for="rsiEntry" class="form-label">RSI Entry Level</label>
-                                <input type="number" id="rsiEntry" name="rsi_entry" class="form-control" value="30"
-                                    min="0" max="100" />
-                            </div>
-                            <div class="form-group">
-                                <label for="rsiExit" class="form-label">RSI Exit Level</label>
-                                <input type="number" id="rsiExit" name="rsi_exit" class="form-control" value="55"
-                                    min="0" max="100" />
-                            </div>
-                        </div>
+                        <!-- ✅ Dynamic strategy parameters will be injected here by config.js -->
+                        <div id="strategyParams" class="strategy-params"></div>
                     </fieldset>
 
                     <!-- Feature Pack & Export -->
@@ -148,20 +110,6 @@
                                 <option value="default" selected>Default (ON)</option>
                                 <option value="none">None</option>
                             </select>
-                        </div>
-
-                        <div class="form-group-checkbox">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="saveJson" name="save_json" class="checkbox-input" />
-                                <span class="checkbox-text">Export JSON</span>
-                            </label>
-                        </div>
-
-                        <div class="form-group-checkbox">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="saveParquet" name="save_parquet" class="checkbox-input" />
-                                <span class="checkbox-text">Export Parquet</span>
-                            </label>
                         </div>
                     </fieldset>
 
@@ -352,8 +300,9 @@
     </footer>
 
     <!-- Application Script -->
-    <script src="dummy-data.js"></script>
-    <script src="app.js"></script>
+    <script src="ui_options.js" defer></script>
+    <!-- <script src="dummy-data.js"></script> -->
+    <script src="app.js" defer></script>
 </body>
 
 </html>

@@ -1,0 +1,131 @@
+{
+    "fields": {
+        "broker": {
+            "required": true
+        },
+        "instrument": {
+            "required": true,
+            "uppercase": true
+        },
+        "strategy": {
+            "required": true
+        }
+    },
+    "brokers": [
+        {
+            "id": "angelone",
+            "label": "Angel One"
+        }
+    ],
+    "instruments": [
+        {
+            "id": "NSE:TCS-EQ",
+            "label": "TCS (NSE EQ)"
+        },
+        {
+            "id": "NSE:INFY-EQ",
+            "label": "INFY (NSE EQ)"
+        },
+        {
+            "id": "NFO:BANKNIFTY-FUT-202601",
+            "label": "BANKNIFTY (NFO CUR FUT)"
+        },
+        {
+            "id": "NFO:BANKNIFTY-FUT-202601",
+            "label": "BANKNIFTY (NFO NXT FUT)"
+        },
+        {
+            "id": "NFO:NIFTY-FUT-202601",
+            "label": "NIFTY (NFO CUR FUT)"
+        },
+        {
+            "id": "NFO:NIFTY-FUT-202601",
+            "label": "NIFTY (NFO NXT FUT)"
+        }
+    ],
+    "strategies": [
+        {
+            "id": "ema_crossover",
+            "label": "EMA Crossover",
+            "default": true,
+            "requires_instrument": true,
+            "params": [
+                {
+                    "key": "ema_fast",
+                    "label": "EMA Fast Period",
+                    "type": "number",
+                    "required": true,
+                    "default": 9,
+                    "min": 1,
+                    "max": 200,
+                    "step": 1
+                },
+                {
+                    "key": "ema_slow",
+                    "label": "EMA Slow Period",
+                    "type": "number",
+                    "required": true,
+                    "default": 21,
+                    "min": 1,
+                    "max": 400,
+                    "step": 1
+                }
+            ]
+        },
+        {
+            "id": "rsi_mean_reversion",
+            "label": "RSI Mean Reversion",
+            "requires_instrument": true,
+            "params": [
+                {
+                    "key": "rsi_period",
+                    "label": "RSI Period",
+                    "type": "number",
+                    "required": true,
+                    "default": 14,
+                    "min": 2,
+                    "max": 200,
+                    "step": 1
+                },
+                {
+                    "key": "rsi_entry",
+                    "label": "RSI Entry Threshold",
+                    "type": "number",
+                    "required": true,
+                    "default": 30,
+                    "min": 1,
+                    "max": 99,
+                    "step": 0.1
+                },
+                {
+                    "key": "rsi_exit",
+                    "label": "RSI Exit Threshold",
+                    "type": "number",
+                    "required": true,
+                    "default": 55,
+                    "min": 1,
+                    "max": 99,
+                    "step": 0.1
+                }
+            ]
+        },
+        {
+            "id": "nifty_intraday_momentum",
+            "label": "NIFTY Intraday Momentum (fixed instrument)",
+            "requires_instrument": false,
+            "default_instrument_id": "NFO:NIFTY-FUT-20260130",
+            "params": [
+                {
+                    "key": "risk_per_trade",
+                    "label": "Risk per Trade",
+                    "type": "number",
+                    "required": true,
+                    "default": 0.5,
+                    "min": 0.1,
+                    "max": 99,
+                    "step": 0.1
+                }
+            ]
+        }
+    ]
+}
