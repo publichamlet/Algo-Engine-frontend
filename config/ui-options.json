@@ -27,19 +27,19 @@
             "label": "INFY (NSE EQ)"
         },
         {
-            "id": "NFO:BANKNIFTY-FUT-202601",
+            "id": "NFO:BANKNIFTY-FUT-202602",
             "label": "BANKNIFTY (NFO CUR FUT)"
         },
         {
-            "id": "NFO:BANKNIFTY-FUT-202601",
+            "id": "NFO:BANKNIFTY-FUT-202603",
             "label": "BANKNIFTY (NFO NXT FUT)"
         },
         {
-            "id": "NFO:NIFTY-FUT-202601",
+            "id": "NFO:NIFTY-FUT-202602",
             "label": "NIFTY (NFO CUR FUT)"
         },
         {
-            "id": "NFO:NIFTY-FUT-202601",
+            "id": "NFO:NIFTY-FUT-202603",
             "label": "NIFTY (NFO NXT FUT)"
         }
     ],
