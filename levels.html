@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S/R Levels - Algo Trading Platform</title>
+
+    <!-- TradingView Lightweight Charts -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+
+    <!-- New page-specific stylesheet (same theme, independent file) -->
+    <link rel="stylesheet" href="assets/styles/levels.css" />
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="logo-icon">🧱</span>
+                    S/R Levels Viewer
+                </h1>
+                <p class="header-subtitle">Market Data + Support/Resistance Zones (Any Timeframe)</p>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <!-- Sidebar -->
+            <aside class="form-sidebar">
+                <form id="levelsForm" class="levels-form">
+                    <!-- API / Environment -->
+                    <!-- <fieldset class="form-section">
+                        <legend class="form-legend">API</legend>
+
+                        <div class="form-group">
+                            <label for="apiBase" class="form-label">API Base URL</label>
+                            <input id="apiBase" class="form-control" type="text"
+                                placeholder="http://127.0.0.1:8000 (or leave blank for same-origin)" />
+                            <small class="help-text">If blank, requests go to the same origin as this page.</small>
+                        </div>
+                    </fieldset> -->
+
+                    <!-- Market Inputs -->
+                    <fieldset class="form-section">
+                        <legend class="form-legend">Market & Time</legend>
+
+                        <div class="form-group">
+                            <label for="broker" class="form-label">Broker</label>
+                            <select id="broker" class="form-control" required></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="instrument" class="form-label">Instrument</label>
+                            <select id="instrument" class="form-control" required></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="timeframe" class="form-label">Timeframe</label>
+                            <select id="timeframe" class="form-control" required>
+                                <option value="1m">1 Minute</option>
+                                <option value="3m">3 Minutes</option>
+                                <option value="5m" selected>5 Minutes</option>
+                                <option value="15m">15 Minutes</option>
+                                <option value="1h">1 Hour</option>
+                                <option value="4h">4 Hours</option>
+                                <option value="1d">1 Day</option>
+                            </select>
+                        </div>
+
+                        <!-- Range Mode -->
+                        <div class="form-group">
+                            <label class="form-label">Range Mode</label>
+                            <div class="radio-row">
+                                <label class="radio-item">
+                                    <input type="radio" name="rangeMode" value="range" checked />
+                                    <span>Date Range</span>
+                                </label>
+                                <label class="radio-item">
+                                    <input type="radio" name="rangeMode" value="lookback" />
+                                    <span>Lookback Candles</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Date Range -->
+                        <div id="rangeBlock">
+                            <div class="form-group">
+                                <label for="startIst" class="form-label">Start (IST)</label>
+                                <input type="datetime-local" id="startIst" class="form-control" required />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="endIst" class="form-label">End (IST)</label>
+                                <input type="datetime-local" id="endIst" class="form-control" required />
+                            </div>
+                        </div>
+
+                        <!-- Lookback Candles -->
+                        <div id="lookbackBlock" class="hidden">
+                            <div class="form-group">
+                                <label for="endIst2" class="form-label">End (IST)</label>
+                                <input type="datetime-local" id="endIst2" class="form-control" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="lookbackCandles" class="form-label">Lookback Candles</label>
+                                <input type="number" id="lookbackCandles" class="form-control" min="10" step="1"
+                                    placeholder="e.g. 500" />
+                                <small class="help-text">Start time will be computed from timeframe × candles.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="computedStart" class="form-label">Computed Start (IST)</label>
+                                <input type="text" id="computedStart" class="form-control" disabled
+                                    placeholder="(auto)" />
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Levels Engine Parameters -->
+                    <fieldset class="form-section">
+                        <legend class="form-legend">Levels Engine Params</legend>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="pivotN" class="form-label">pivot_n</label>
+                                <input type="number" id="pivotN" class="form-control" min="1" step="1" value="2" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="lookbackBars" class="form-label">lookback_bars</label>
+                                <input type="number" id="lookbackBars" class="form-control" min="50" step="1"
+                                    value="260" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="atrPeriod" class="form-label">atr_period</label>
+                                <input type="number" id="atrPeriod" class="form-control" min="2" step="1" value="14" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tolMode" class="form-label">tol_mode</label>
+                                <select id="tolMode" class="form-control">
+                                    <option value="atr" selected>atr</option>
+                                    <option value="pct">pct</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tolAtrMult" class="form-label">tol_atr_mult</label>
+                                <input type="number" id="tolAtrMult" class="form-control" step="0.1" value="0.7" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tolPct" class="form-label">tol_pct</label>
+                                <input type="number" id="tolPct" class="form-control" step="0.001" value="0.004" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="topNEach" class="form-label">top_n_each</label>
+                                <input type="number" id="topNEach" class="form-control" min="1" step="1" value="5" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="minTouches" class="form-label">min_touches</label>
+                                <input type="number" id="minTouches" class="form-control" min="1" step="1" value="2" />
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Actions -->
+                    <div class="form-actions">
+                        <button type="button" id="btnFetch" class="btn btn-primary btn-lg">
+                            <span class="btn-icon">📥</span> Fetch Market Data
+                        </button>
+                        <button type="button" id="btnLevels" class="btn btn-secondary btn-lg">
+                            <span class="btn-icon">🧠</span> Run Levels
+                        </button>
+                        <button type="submit" id="btnRunAll" class="btn btn-run btn-lg">
+                            <span class="btn-icon">🚀</span> Fetch + Run
+                        </button>
+                    </div>
+                </form>
+            </aside>
+
+            <!-- Content Area -->
+            <section class="content-area">
+
+                <!-- Loading -->
+                <div id="loadingOverlay" class="loading-overlay hidden">
+                    <div class="spinner-container">
+                        <div class="spinner"></div>
+                        <p id="loadingText" class="spinner-text">Working...</p>
+                    </div>
+                </div>
+
+                <!-- Error -->
+                <div id="errorBanner" class="error-banner hidden">
+                    <div class="error-content">
+                        <span class="error-icon">⚠️</span>
+                        <p id="errorMessage" class="error-message"></p>
+                        <button type="button" id="errorClose" class="error-close">×</button>
+                    </div>
+                </div>
+
+                <!-- Success -->
+                <div id="successBanner" class="success-banner hidden">
+                    <div class="success-content">
+                        <span class="success-icon">✅</span>
+                        <p id="successMessage" class="success-message"></p>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div id="results" class="results-container hidden">
+                    <div class="chart-section">
+                        <h2 class="section-title">Chart</h2>
+
+                        <div class="chart-wrap">
+                            <div id="chartContainer" class="chart-container-fullscreen"></div>
+                            <!-- Overlay canvas for zone rectangles -->
+                            <canvas id="zoneOverlay" class="zone-overlay"></canvas>
+                        </div>
+
+                        <div class="chart-meta">
+                            <div><span class="pill pill-support"></span> Support zones</div>
+                            <div><span class="pill pill-resistance"></span> Resistance zones</div>
+                        </div>
+                    </div>
+
+                    <div class="levels-section">
+                        <h2 class="section-title">Levels Output</h2>
+
+                        <div class="levels-grid">
+                            <div class="levels-card">
+                                <h3 class="levels-title">Support Zones</h3>
+                                <div class="table-wrapper">
+                                    <table class="levels-table" id="supportTable">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Range</th>
+                                                <th>Touches</th>
+                                                <th>Last Touch</th>
+                                                <th>Rejection</th>
+                                                <th>Strength</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="levels-card">
+                                <h3 class="levels-title">Resistance Zones</h3>
+                                <div class="table-wrapper">
+                                    <table class="levels-table" id="resistanceTable">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Range</th>
+                                                <th>Touches</th>
+                                                <th>Last Touch</th>
+                                                <th>Rejection</th>
+                                                <th>Strength</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="meta-row" id="runMeta"></div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-state-icon">🧪</div>
+                    <h3 class="empty-state-title">Ready for Levels</h3>
+                    <p class="empty-state-text">
+                        Choose instrument + timeframe, then fetch candles and run S/R levels.
+                    </p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- New page-specific logic -->
+    <script src="assets/js/levels.js"></script>
+</body>
+
+</html>
