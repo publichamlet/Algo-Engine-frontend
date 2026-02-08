@@ -87,17 +87,8 @@ function forceChartResizeAndRedraw() {
 }
 
 // ---------------------------------------------------------------------------
-// API base resolution
+// API POST
 // ---------------------------------------------------------------------------
-function getApiBase() {
-    // If user typed it, use it
-    const typed = ($("apiBase").value || "").trim();
-    if (typed) return typed.replace(/\/+$/, "");
-
-    // Else, use same-origin (works if you host frontend behind same domain)
-    return window.location.origin.replace(/\/+$/, "");
-}
-
 async function postJson(url, payload) {
     const res = await fetch(url, {
         method: "POST",
@@ -487,7 +478,6 @@ async function fetchMarketData() {
         throw new Error("Please provide a valid date range OR lookback candles + end time.");
     }
 
-    const apiBase = getApiBase();
     const url = `${API_BASE}${ENDPOINT_CANDLES}`;
 
     // IMPORTANT: indicators: [] means "OHLCV only" (as per your CandleFeaturesPayload behavior)
@@ -558,7 +548,6 @@ async function runLevels() {
         throw new Error("Please provide a valid date range OR lookback candles + end time.");
     }
 
-    const apiBase = getApiBase();
     const url = `${API_BASE}${ENDPOINT_LEVELS}`;
 
     // Engine params
@@ -722,6 +711,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         $("levelsForm").addEventListener("submit", async (e) => {
             e.preventDefault();
+            // console.log("Fetch + Run button clicked");
             try {
                 await fetchMarketData();
                 await runLevels();
