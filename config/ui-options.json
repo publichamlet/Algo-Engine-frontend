@@ -19,12 +19,208 @@
     ],
     "instruments": [
         {
-            "id": "NSE:TCS-EQ",
-            "label": "TCS (NSE EQ)"
+            "id": "NSE:ADANIENT-EQ",
+            "label": "ADANIENT (NSE EQ)"
+        },
+        {
+            "id": "NSE:ADANIPORTS-EQ",
+            "label": "ADANIPORTS (NSE EQ)"
+        },
+        {
+            "id": "NSE:APOLLOHOSP-EQ",
+            "label": "APOLLOHOSP (NSE EQ)"
+        },
+        {
+            "id": "NSE:ASIANPAINT-EQ",
+            "label": "ASIANPAINT (NSE EQ)"
+        },
+        {
+            "id": "NSE:AXISBANK-EQ",
+            "label": "AXISBANK (NSE EQ)"
+        },
+        {
+            "id": "NSE:BAJAJ-AUTO-EQ",
+            "label": "BAJAJ-AUTO (NSE EQ)"
+        },
+        {
+            "id": "NSE:BAJFINANCE-EQ",
+            "label": "BAJFINANCE (NSE EQ)"
+        },
+        {
+            "id": "NSE:BAJAJFINSV-EQ",
+            "label": "BAJAJFINSV (NSE EQ)"
+        },
+        {
+            "id": "NSE:BEL-EQ",
+            "label": "BEL (NSE EQ)"
+        },
+        {
+            "id": "NSE:BHARTIARTL-EQ",
+            "label": "BHARTIARTL (NSE EQ)"
+        },
+        {
+            "id": "NSE:CIPLA-EQ",
+            "label": "CIPLA (NSE EQ)"
+        },
+        {
+            "id": "NSE:COALINDIA-EQ",
+            "label": "COALINDIA (NSE EQ)"
+        },
+        {
+            "id": "NSE:DRREDDY-EQ",
+            "label": "DRREDDY (NSE EQ)"
+        },
+        {
+            "id": "NSE:EICHERMOT-EQ",
+            "label": "EICHERMOT (NSE EQ)"
+        },
+        {
+            "id": "NSE:ETERNAL-EQ",
+            "label": "ETERNAL (NSE EQ)"
+        },
+        {
+            "id": "NSE:GRASIM-EQ",
+            "label": "GRASIM (NSE EQ)"
+        },
+        {
+            "id": "NSE:HCLTECH-EQ",
+            "label": "HCLTECH (NSE EQ)"
+        },
+        {
+            "id": "NSE:HDFCBANK-EQ",
+            "label": "HDFCBANK (NSE EQ)"
+        },
+        {
+            "id": "NSE:HDFCLIFE-EQ",
+            "label": "HDFCLIFE (NSE EQ)"
+        },
+        {
+            "id": "NSE:HINDALCO-EQ",
+            "label": "HINDALCO (NSE EQ)"
+        },
+        {
+            "id": "NSE:HINDUNILVR-EQ",
+            "label": "HINDUNILVR (NSE EQ)"
+        },
+        {
+            "id": "NSE:ICICIBANK-EQ",
+            "label": "ICICIBANK (NSE EQ)"
+        },
+        {
+            "id": "NSE:ITC-EQ",
+            "label": "ITC (NSE EQ)"
         },
         {
             "id": "NSE:INFY-EQ",
             "label": "INFY (NSE EQ)"
+        },
+        {
+            "id": "NSE:INDIGO-EQ",
+            "label": "INDIGO (NSE EQ)"
+        },
+        {
+            "id": "NSE:JSWSTEEL-EQ",
+            "label": "JSWSTEEL (NSE EQ)"
+        },
+        {
+            "id": "NSE:JIOFIN-EQ",
+            "label": "JIOFIN (NSE EQ)"
+        },
+        {
+            "id": "NSE:KOTAKBANK-EQ",
+            "label": "KOTAKBANK (NSE EQ)"
+        },
+        {
+            "id": "NSE:KWIL-EQ",
+            "label": "KWIL (NSE EQ)"
+        },
+        {
+            "id": "NSE:LT-EQ",
+            "label": "LT (NSE EQ)"
+        },
+        {
+            "id": "NSE:M&M-EQ",
+            "label": "M&M (NSE EQ)"
+        },
+        {
+            "id": "NSE:MARUTI-EQ",
+            "label": "MARUTI (NSE EQ)"
+        },
+        {
+            "id": "NSE:MAXHEALTH-EQ",
+            "label": "MAXHEALTH (NSE EQ)"
+        },
+        {
+            "id": "NSE:NTPC-EQ",
+            "label": "NTPC (NSE EQ)"
+        },
+        {
+            "id": "NSE:NESTLEIND-EQ",
+            "label": "NESTLEIND (NSE EQ)"
+        },
+        {
+            "id": "NSE:ONGC-EQ",
+            "label": "ONGC (NSE EQ)"
+        },
+        {
+            "id": "NSE:POWERGRID-EQ",
+            "label": "POWERGRID (NSE EQ)"
+        },
+        {
+            "id": "NSE:RELIANCE-EQ",
+            "label": "RELIANCE (NSE EQ)"
+        },
+        {
+            "id": "NSE:SBILIFE-EQ",
+            "label": "SBILIFE (NSE EQ)"
+        },
+        {
+            "id": "NSE:SHRIRAMFIN-EQ",
+            "label": "SHRIRAMFIN (NSE EQ)"
+        },
+        {
+            "id": "NSE:SBIN-EQ",
+            "label": "SBIN (NSE EQ)"
+        },
+        {
+            "id": "NSE:SUNPHARMA-EQ",
+            "label": "SUNPHARMA (NSE EQ)"
+        },
+        {
+            "id": "NSE:TCS-EQ",
+            "label": "TCS (NSE EQ)"
+        },
+        {
+            "id": "NSE:TATACONSUM-EQ",
+            "label": "TATACONSUM (NSE EQ)"
+        },
+        {
+            "id": "NSE:TMPV-EQ",
+            "label": "TMPV (NSE EQ)"
+        },
+        {
+            "id": "NSE:TATASTEEL-EQ",
+            "label": "TATASTEEL (NSE EQ)"
+        },
+        {
+            "id": "NSE:TECHM-EQ",
+            "label": "TECHM (NSE EQ)"
+        },
+        {
+            "id": "NSE:TITAN-EQ",
+            "label": "TITAN (NSE EQ)"
+        },
+        {
+            "id": "NSE:TRENT-EQ",
+            "label": "TRENT (NSE EQ)"
+        },
+        {
+            "id": "NSE:ULTRACEMCO-EQ",
+            "label": "ULTRACEMCO (NSE EQ)"
+        },
+        {
+            "id": "NSE:WIPRO-EQ",
+            "label": "WIPRO (NSE EQ)"
         },
         {
             "id": "NFO:BANKNIFTY-FUT-202602",
