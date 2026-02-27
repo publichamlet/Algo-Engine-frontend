@@ -1,6 +1,6 @@
 // ===== CONFIG =====
-// const API_BASE = "http://localhost:8000"; // Change this to your backend URL
-const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
+const API_BASE = "http://localhost:8000"; // Change this to your backend URL
+// const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
 
 // ===== STATE MANAGEMENT =====
 const state = {
@@ -167,31 +167,61 @@ function validateForm(formData) {
 function buildPayload() {
     const form = document.getElementById('backtestForm');
     const formData = new FormData(form);
+
     const selectedInstrument = formData.get("instrument_id");
     const instrument_id =
-    (!selectedInstrument && window.__strategyDefaultInstrumentId)
-        ? window.__strategyDefaultInstrumentId
-        : selectedInstrument;
+        (!selectedInstrument && window.__strategyDefaultInstrumentId)
+            ? window.__strategyDefaultInstrumentId
+            : selectedInstrument;
 
-    return {
+    const strategy = formData.get('strategy');
+
+    // Dynamic params (from ui_options.js)
+    const rawParams = (typeof readStrategyParamsFromUI === "function")
+        ? readStrategyParamsFromUI()
+        : {};
+
+    // Strategy-specific UI rules requested:
+    // - Stable: no params should be sent (or empty object; backend can treat missing == defaults)
+    // - Turbo: send only { overnight_mode: ... }
+    let paramsToSend = rawParams;
+    if (strategy === "beplus_momentum_stable") {
+        paramsToSend = null; // omit in payload
+    } else if (strategy === "beplus_momentum_turbo") {
+        paramsToSend = {
+            overnight_mode: rawParams.overnight_mode || "all",
+        };
+    }
+
+    // Auto-set HA flags + feature pack (based on CLI tests) for both Stable and Turbo.
+    const isMomentum = (strategy === "beplus_momentum_stable" || strategy === "beplus_momentum_turbo");
+
+    const payload = {
         broker: formData.get('broker'),
         instrument_id,
         timeframe: formData.get('timeframe'),
         start_ist: formData.get('start_ist'),
         end_ist: formData.get('end_ist'),
-        strategy: formData.get('strategy'),
-
-        // ✅ NEW: dynamic params (comes from config.js)
-        params: (typeof readStrategyParamsFromUI === "function")
-            ? readStrategyParamsFromUI()
-            : {},
+        strategy,
 
         capital: parseInt(formData.get('capital')) || 0,
         qty: parseInt(formData.get('qty')) || 0,
-        feature_pack: formData.get('feature_pack') || "default"
 
-        // ❌ Remove save_json/save_parquet flags (as per new backend design)
+        // Default from UI unless overridden
+        feature_pack: formData.get('feature_pack') || "default"
     };
+
+    if (isMomentum) {
+        payload.feature_pack = "none";
+        payload.candle_mode = "heikin_ashi";
+        payload.execution_price_source = "heikin_ashi";
+    }
+
+    if (paramsToSend && Object.keys(paramsToSend).length > 0) {
+        payload.params = paramsToSend;
+    }
+
+    return payload;
 }
 
 /**

@@ -5,6 +5,19 @@
 const UI_OPTIONS_PATH = "./config/ui-options.json";
 let UI_CFG = null; // cached in-memory config
 
+// ---------------------------------------------------------------------------
+// Strategy label overrides (UI-only names)
+// Why:
+// - Backend expects the strategy id: "psar_rsi_heikin_ashi_scalp"
+// - UI should display a friendly name: "BePlus Edge Scalp"
+// - This allows UI rename even if ui-options.json has no "label" yet
+// ---------------------------------------------------------------------------
+const STRATEGY_LABEL_OVERRIDES = {
+    // UI-only friendly names (backend ids stay the same)
+    beplus_momentum_stable: "BePlus Momentum Stable",
+    beplus_momentum_turbo: "BePlus Momentum Turbo",
+};
+
 function applyRequired(el, required) {
     if (!el) return;
     if (required) el.setAttribute("required", "required");
@@ -28,8 +41,20 @@ function fillSelect(selectId, items) {
 
     (items || []).forEach(item => {
         const opt = document.createElement("option");
+
+        // Always send the "id" to backend
         opt.value = item.id;
-        opt.textContent = item.label || item.id;
+
+        // UI label logic:
+        // 1) If this is a strategy field and we have an override, use it
+        // 2) Else use item.label if provided
+        // 3) Else fallback to item.id
+        if (selectId === "strategy" && STRATEGY_LABEL_OVERRIDES[item.id]) {
+            opt.textContent = STRATEGY_LABEL_OVERRIDES[item.id];
+        } else {
+            opt.textContent = item.label || item.id;
+        }
+
         el.appendChild(opt);
 
         if (item.default === true) defaultValue = item.id;
@@ -124,37 +149,71 @@ function createParamField(paramDef) {
     label.setAttribute("for", `param_${paramDef.key}`);
     label.textContent = paramDef.label || paramDef.key;
 
-    const input = document.createElement("input");
-    input.className = "form-control";
-    input.id = `param_${paramDef.key}`;
-    input.name = `param_${paramDef.key}`;
-    input.dataset.paramKey = paramDef.key;
+    const t = String(paramDef.type || "text").toLowerCase();
 
-    // Type handling
-    const t = (paramDef.type || "text").toLowerCase();
-    input.type = (t === "number" || t === "text") ? t : "text";
+    // Support: number, text, select
+    let fieldEl = null;
 
-    if (paramDef.placeholder) input.placeholder = String(paramDef.placeholder);
+    if (t === "select") {
+        const select = document.createElement("select");
+        select.className = "form-control";
+        select.id = `param_${paramDef.key}`;
+        select.name = `param_${paramDef.key}`;
+        select.dataset.paramKey = paramDef.key;
 
-    // Required
-    if (paramDef.required === true) {
-        input.setAttribute("required", "required");
-    }
+        // Options schema: [{ value, label }]
+        const opts = Array.isArray(paramDef.options) ? paramDef.options : [];
+        opts.forEach(o => {
+            const opt = document.createElement("option");
+            opt.value = String(o.value);
+            opt.textContent = String(o.label ?? o.value);
+            select.appendChild(opt);
+        });
 
-    // Numeric constraints
-    if (input.type === "number") {
-        if (paramDef.min !== undefined) input.min = String(paramDef.min);
-        if (paramDef.max !== undefined) input.max = String(paramDef.max);
-        if (paramDef.step !== undefined) input.step = String(paramDef.step);
-    }
+        // Default value
+        if (paramDef.default !== undefined && paramDef.default !== null) {
+            select.value = String(paramDef.default);
+        }
 
-    // Default value
-    if (paramDef.default !== undefined && paramDef.default !== null) {
-        input.value = String(paramDef.default);
+        // Required
+        if (paramDef.required === true) {
+            select.setAttribute("required", "required");
+        }
+
+        fieldEl = select;
+    } else {
+        const input = document.createElement("input");
+        input.className = "form-control";
+        input.id = `param_${paramDef.key}`;
+        input.name = `param_${paramDef.key}`;
+        input.dataset.paramKey = paramDef.key;
+
+        input.type = (t === "number" || t === "text") ? t : "text";
+
+        if (paramDef.placeholder) input.placeholder = String(paramDef.placeholder);
+
+        // Required
+        if (paramDef.required === true) {
+            input.setAttribute("required", "required");
+        }
+
+        // Numeric constraints
+        if (input.type === "number") {
+            if (paramDef.min !== undefined) input.min = String(paramDef.min);
+            if (paramDef.max !== undefined) input.max = String(paramDef.max);
+            if (paramDef.step !== undefined) input.step = String(paramDef.step);
+        }
+
+        // Default value
+        if (paramDef.default !== undefined && paramDef.default !== null) {
+            input.value = String(paramDef.default);
+        }
+
+        fieldEl = input;
     }
 
     wrap.appendChild(label);
-    wrap.appendChild(input);
+    wrap.appendChild(fieldEl);
 
     // Optional help text
     if (paramDef.help) {
@@ -223,17 +282,23 @@ function readStrategyParamsFromUI() {
     const container = document.getElementById("strategyParams");
     if (!container) return {};
 
-    const inputs = container.querySelectorAll("input[data-param-key]");
+    // Support both inputs and selects
+    const fields = container.querySelectorAll("[data-param-key]");
     const out = {};
 
-    inputs.forEach(inp => {
-        const key = inp.dataset.paramKey;
-        let val = inp.value;
+    fields.forEach(el => {
+        const key = el.dataset.paramKey;
+        let val = el.value;
 
         // Convert numeric types
-        if (inp.type === "number") {
+        if (el.tagName.toLowerCase() === "input" && el.type === "number") {
             if (val === "" || val === null || val === undefined) return;
             val = Number(val);
+        }
+
+        // Skip empty strings for non-required fields
+        if ((val === "" || val === null || val === undefined) && el.getAttribute("required") !== "required") {
+            return;
         }
 
         out[key] = val;
@@ -286,14 +351,14 @@ document.addEventListener("DOMContentLoaded", () => {
 // Example snippet (use inside your existing runBacktest()):
 //
 // const payload = {
-//   broker: document.getElementById("broker").value,
-//   instrument_id: document.getElementById("instrument").value,
-//   timeframe: document.getElementById("timeframe").value,
-//   start_ist: document.getElementById("start_ist").value,
-//   end_ist: document.getElementById("end_ist").value,
-//   strategy: document.getElementById("strategy").value,
-//   capital: Number(document.getElementById("capital").value || 100000),
-//   qty: Number(document.getElementById("qty").value || 1),
-//   feature_pack: document.getElementById("feature_pack")?.value || "default",
-//   params: readStrategyParamsFromUI()
+//     broker: document.getElementById("broker").value,
+//     instrument_id: document.getElementById("instrument").value,
+//     timeframe: document.getElementById("timeframe").value,
+//     start_ist: document.getElementById("start_ist").value,
+//     end_ist: document.getElementById("end_ist").value,
+//     strategy: document.getElementById("strategy").value,
+//     capital: Number(document.getElementById("capital").value || 100000),
+//     qty: Number(document.getElementById("qty").value || 1),
+//     feature_pack: document.getElementById("feature_pack")?.value || "default",
+//     params: readStrategyParamsFromUI()
 // };

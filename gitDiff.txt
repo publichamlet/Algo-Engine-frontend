@@ -1,0 +1,452 @@
+diff --git a/assets/js/app.js b/assets/js/app.js
+index fb31597..69caebf 100644
+--- a/assets/js/app.js
++++ b/assets/js/app.js
+@@ -1,6 +1,6 @@
+ // ===== CONFIG =====
+-// const API_BASE = "http://localhost:8000"; // Change this to your backend URL
+-const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
++const API_BASE = "http://localhost:8000"; // Change this to your backend URL
++// const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
+ 
+ // ===== STATE MANAGEMENT =====
+ const state = {
+@@ -167,31 +167,61 @@ function validateForm(formData) {
+ function buildPayload() {
+     const form = document.getElementById('backtestForm');
+     const formData = new FormData(form);
++
+     const selectedInstrument = formData.get("instrument_id");
+     const instrument_id =
+-    (!selectedInstrument && window.__strategyDefaultInstrumentId)
+-        ? window.__strategyDefaultInstrumentId
+-        : selectedInstrument;
++        (!selectedInstrument && window.__strategyDefaultInstrumentId)
++            ? window.__strategyDefaultInstrumentId
++            : selectedInstrument;
++
++    const strategy = formData.get('strategy');
++
++    // Dynamic params (from ui_options.js)
++    const rawParams = (typeof readStrategyParamsFromUI === "function")
++        ? readStrategyParamsFromUI()
++        : {};
++
++    // Strategy-specific UI rules requested:
++    // - Stable: no params should be sent (or empty object; backend can treat missing == defaults)
++    // - Turbo: send only { overnight_mode: ... }
++    let paramsToSend = rawParams;
++    if (strategy === "beplus_momentum_stable") {
++        paramsToSend = null; // omit in payload
++    } else if (strategy === "beplus_momentum_turbo") {
++        paramsToSend = {
++            overnight_mode: rawParams.overnight_mode || "all",
++        };
++    }
++
++    // Auto-set HA flags + feature pack (based on CLI tests) for both Stable and Turbo.
++    const isMomentum = (strategy === "beplus_momentum_stable" || strategy === "beplus_momentum_turbo");
+ 
+-    return {
++    const payload = {
+         broker: formData.get('broker'),
+         instrument_id,
+         timeframe: formData.get('timeframe'),
+         start_ist: formData.get('start_ist'),
+         end_ist: formData.get('end_ist'),
+-        strategy: formData.get('strategy'),
+-
+-        // ✅ NEW: dynamic params (comes from config.js)
+-        params: (typeof readStrategyParamsFromUI === "function")
+-            ? readStrategyParamsFromUI()
+-            : {},
++        strategy,
+ 
+         capital: parseInt(formData.get('capital')) || 0,
+         qty: parseInt(formData.get('qty')) || 0,
+-        feature_pack: formData.get('feature_pack') || "default"
+ 
+-        // ❌ Remove save_json/save_parquet flags (as per new backend design)
++        // Default from UI unless overridden
++        feature_pack: formData.get('feature_pack') || "default"
+     };
++
++    if (isMomentum) {
++        payload.feature_pack = "none";
++        payload.candle_mode = "heikin_ashi";
++        payload.execution_price_source = "heikin_ashi";
++    }
++
++    if (paramsToSend && Object.keys(paramsToSend).length > 0) {
++        payload.params = paramsToSend;
++    }
++
++    return payload;
+ }
+ 
+ /**
+diff --git a/assets/js/ui_options.js b/assets/js/ui_options.js
+index a9b2dda..32b386e 100644
+--- a/assets/js/ui_options.js
++++ b/assets/js/ui_options.js
+@@ -5,6 +5,19 @@
+ const UI_OPTIONS_PATH = "./config/ui-options.json";
+ let UI_CFG = null; // cached in-memory config
+ 
++// ---------------------------------------------------------------------------
++// Strategy label overrides (UI-only names)
++// Why:
++// - Backend expects the strategy id: "psar_rsi_heikin_ashi_scalp"
++// - UI should display a friendly name: "BePlus Edge Scalp"
++// - This allows UI rename even if ui-options.json has no "label" yet
++// ---------------------------------------------------------------------------
++const STRATEGY_LABEL_OVERRIDES = {
++    // UI-only friendly names (backend ids stay the same)
++    beplus_momentum_stable: "BePlus Momentum Stable",
++    beplus_momentum_turbo: "BePlus Momentum Turbo",
++};
++
+ function applyRequired(el, required) {
+     if (!el) return;
+     if (required) el.setAttribute("required", "required");
+@@ -28,8 +41,20 @@ function fillSelect(selectId, items) {
+ 
+     (items || []).forEach(item => {
+         const opt = document.createElement("option");
++
++        // Always send the "id" to backend
+         opt.value = item.id;
+-        opt.textContent = item.label || item.id;
++
++        // UI label logic:
++        // 1) If this is a strategy field and we have an override, use it
++        // 2) Else use item.label if provided
++        // 3) Else fallback to item.id
++        if (selectId === "strategy" && STRATEGY_LABEL_OVERRIDES[item.id]) {
++            opt.textContent = STRATEGY_LABEL_OVERRIDES[item.id];
++        } else {
++            opt.textContent = item.label || item.id;
++        }
++
+         el.appendChild(opt);
+ 
+         if (item.default === true) defaultValue = item.id;
+@@ -124,37 +149,71 @@ function createParamField(paramDef) {
+     label.setAttribute("for", `param_${paramDef.key}`);
+     label.textContent = paramDef.label || paramDef.key;
+ 
+-    const input = document.createElement("input");
+-    input.className = "form-control";
+-    input.id = `param_${paramDef.key}`;
+-    input.name = `param_${paramDef.key}`;
+-    input.dataset.paramKey = paramDef.key;
++    const t = String(paramDef.type || "text").toLowerCase();
++
++    // Support: number, text, select
++    let fieldEl = null;
++
++    if (t === "select") {
++        const select = document.createElement("select");
++        select.className = "form-control";
++        select.id = `param_${paramDef.key}`;
++        select.name = `param_${paramDef.key}`;
++        select.dataset.paramKey = paramDef.key;
++
++        // Options schema: [{ value, label }]
++        const opts = Array.isArray(paramDef.options) ? paramDef.options : [];
++        opts.forEach(o => {
++            const opt = document.createElement("option");
++            opt.value = String(o.value);
++            opt.textContent = String(o.label ?? o.value);
++            select.appendChild(opt);
++        });
+ 
+-    // Type handling
+-    const t = (paramDef.type || "text").toLowerCase();
+-    input.type = (t === "number" || t === "text") ? t : "text";
++        // Default value
++        if (paramDef.default !== undefined && paramDef.default !== null) {
++            select.value = String(paramDef.default);
++        }
+ 
+-    if (paramDef.placeholder) input.placeholder = String(paramDef.placeholder);
++        // Required
++        if (paramDef.required === true) {
++            select.setAttribute("required", "required");
++        }
+ 
+-    // Required
+-    if (paramDef.required === true) {
+-        input.setAttribute("required", "required");
+-    }
++        fieldEl = select;
++    } else {
++        const input = document.createElement("input");
++        input.className = "form-control";
++        input.id = `param_${paramDef.key}`;
++        input.name = `param_${paramDef.key}`;
++        input.dataset.paramKey = paramDef.key;
+ 
+-    // Numeric constraints
+-    if (input.type === "number") {
+-        if (paramDef.min !== undefined) input.min = String(paramDef.min);
+-        if (paramDef.max !== undefined) input.max = String(paramDef.max);
+-        if (paramDef.step !== undefined) input.step = String(paramDef.step);
+-    }
++        input.type = (t === "number" || t === "text") ? t : "text";
++
++        if (paramDef.placeholder) input.placeholder = String(paramDef.placeholder);
++
++        // Required
++        if (paramDef.required === true) {
++            input.setAttribute("required", "required");
++        }
++
++        // Numeric constraints
++        if (input.type === "number") {
++            if (paramDef.min !== undefined) input.min = String(paramDef.min);
++            if (paramDef.max !== undefined) input.max = String(paramDef.max);
++            if (paramDef.step !== undefined) input.step = String(paramDef.step);
++        }
++
++        // Default value
++        if (paramDef.default !== undefined && paramDef.default !== null) {
++            input.value = String(paramDef.default);
++        }
+ 
+-    // Default value
+-    if (paramDef.default !== undefined && paramDef.default !== null) {
+-        input.value = String(paramDef.default);
++        fieldEl = input;
+     }
+ 
+     wrap.appendChild(label);
+-    wrap.appendChild(input);
++    wrap.appendChild(fieldEl);
+ 
+     // Optional help text
+     if (paramDef.help) {
+@@ -223,19 +282,25 @@ function readStrategyParamsFromUI() {
+     const container = document.getElementById("strategyParams");
+     if (!container) return {};
+ 
+-    const inputs = container.querySelectorAll("input[data-param-key]");
++    // Support both inputs and selects
++    const fields = container.querySelectorAll("[data-param-key]");
+     const out = {};
+ 
+-    inputs.forEach(inp => {
+-        const key = inp.dataset.paramKey;
+-        let val = inp.value;
++    fields.forEach(el => {
++        const key = el.dataset.paramKey;
++        let val = el.value;
+ 
+         // Convert numeric types
+-        if (inp.type === "number") {
++        if (el.tagName.toLowerCase() === "input" && el.type === "number") {
+             if (val === "" || val === null || val === undefined) return;
+             val = Number(val);
+         }
+ 
++        // Skip empty strings for non-required fields
++        if ((val === "" || val === null || val === undefined) && el.getAttribute("required") !== "required") {
++            return;
++        }
++
+         out[key] = val;
+     });
+ 
+@@ -286,14 +351,14 @@ document.addEventListener("DOMContentLoaded", () => {
+ // Example snippet (use inside your existing runBacktest()):
+ //
+ // const payload = {
+-//   broker: document.getElementById("broker").value,
+-//   instrument_id: document.getElementById("instrument").value,
+-//   timeframe: document.getElementById("timeframe").value,
+-//   start_ist: document.getElementById("start_ist").value,
+-//   end_ist: document.getElementById("end_ist").value,
+-//   strategy: document.getElementById("strategy").value,
+-//   capital: Number(document.getElementById("capital").value || 100000),
+-//   qty: Number(document.getElementById("qty").value || 1),
+-//   feature_pack: document.getElementById("feature_pack")?.value || "default",
+-//   params: readStrategyParamsFromUI()
+-// };
++//     broker: document.getElementById("broker").value,
++//     instrument_id: document.getElementById("instrument").value,
++//     timeframe: document.getElementById("timeframe").value,
++//     start_ist: document.getElementById("start_ist").value,
++//     end_ist: document.getElementById("end_ist").value,
++//     strategy: document.getElementById("strategy").value,
++//     capital: Number(document.getElementById("capital").value || 100000),
++//     qty: Number(document.getElementById("qty").value || 1),
++//     feature_pack: document.getElementById("feature_pack")?.value || "default",
++//     params: readStrategyParamsFromUI()
++// };
+\ No newline at end of file
+diff --git a/config/ui-options.json b/config/ui-options.json
+index 7344c4e..7d5d7c1 100644
+--- a/config/ui-options.json
++++ b/config/ui-options.json
+@@ -26,6 +26,14 @@
+             "id": "NSE:ADANIPORTS-EQ",
+             "label": "ADANIPORTS (NSE EQ)"
+         },
++        {
++            "id": "NFO:ADANIPORTS-FUT-202603",
++            "label": "ADANIPORTS (NFO CUR FUT)"
++        },
++        {
++            "id": "NFO:ADANIPORTS-FUT-202604",
++            "label": "ADANIPORTS (NFO NXT FUT)"
++        },
+         {
+             "id": "NSE:APOLLOHOSP-EQ",
+             "label": "APOLLOHOSP (NSE EQ)"
+@@ -223,103 +231,56 @@
+             "label": "WIPRO (NSE EQ)"
+         },
+         {
+-            "id": "NFO:BANKNIFTY-FUT-202602",
++            "id": "NFO:BANKNIFTY-FUT-202603",
+             "label": "BANKNIFTY (NFO CUR FUT)"
+         },
+         {
+-            "id": "NFO:BANKNIFTY-FUT-202603",
++            "id": "NFO:BANKNIFTY-FUT-202604",
+             "label": "BANKNIFTY (NFO NXT FUT)"
+         },
+         {
+-            "id": "NFO:NIFTY-FUT-202602",
++            "id": "NFO:NIFTY-FUT-202603",
+             "label": "NIFTY (NFO CUR FUT)"
+         },
+         {
+-            "id": "NFO:NIFTY-FUT-202603",
++            "id": "NFO:NIFTY-FUT-202604",
+             "label": "NIFTY (NFO NXT FUT)"
+         }
+     ],
+     "strategies": [
+         {
+-            "id": "ema_crossover",
+-            "label": "EMA Crossover",
++            "id": "beplus_momentum_stable",
++            "label": "BePlus Momentum Stable",
+             "default": true,
+             "requires_instrument": true,
+-            "params": [
+-                {
+-                    "key": "ema_fast",
+-                    "label": "EMA Fast Period",
+-                    "type": "number",
+-                    "required": true,
+-                    "default": 9,
+-                    "min": 1,
+-                    "max": 200,
+-                    "step": 1
+-                },
+-                {
+-                    "key": "ema_slow",
+-                    "label": "EMA Slow Period",
+-                    "type": "number",
+-                    "required": true,
+-                    "default": 21,
+-                    "min": 1,
+-                    "max": 400,
+-                    "step": 1
+-                }
+-            ]
++            "params": []
+         },
+         {
+-            "id": "rsi_mean_reversion",
+-            "label": "RSI Mean Reversion",
++            "id": "beplus_momentum_turbo",
++            "label": "BePlus Momentum Turbo",
+             "requires_instrument": true,
+             "params": [
+                 {
+-                    "key": "rsi_period",
+-                    "label": "RSI Period",
+-                    "type": "number",
+-                    "required": true,
+-                    "default": 14,
+-                    "min": 2,
+-                    "max": 200,
+-                    "step": 1
+-                },
+-                {
+-                    "key": "rsi_entry",
+-                    "label": "RSI Entry Threshold",
+-                    "type": "number",
+-                    "required": true,
+-                    "default": 30,
+-                    "min": 1,
+-                    "max": 99,
+-                    "step": 0.1
+-                },
+-                {
+-                    "key": "rsi_exit",
+-                    "label": "RSI Exit Threshold",
+-                    "type": "number",
+-                    "required": true,
+-                    "default": 55,
+-                    "min": 1,
+-                    "max": 99,
+-                    "step": 0.1
+-                }
+-            ]
+-        },
+-        {
+-            "id": "nifty_intraday_momentum",
+-            "label": "NIFTY Intraday Momentum (fixed instrument)",
+-            "requires_instrument": false,
+-            "default_instrument_id": "NFO:NIFTY-FUT-20260130",
+-            "params": [
+-                {
+-                    "key": "risk_per_trade",
+-                    "label": "Risk per Trade",
+-                    "type": "number",
++                    "key": "overnight_mode",
++                    "label": "Overnight Mode",
++                    "type": "select",
+                     "required": true,
+-                    "default": 0.5,
+-                    "min": 0.1,
+-                    "max": 99,
+-                    "step": 0.1
++                    "default": "all",
++                    "options": [
++                        {
++                            "value": "all",
++                            "label": "All"
++                        },
++                        {
++                            "value": "single_day",
++                            "label": "Single Day"
++                        },
++                        {
++                            "value": "weekend_only",
++                            "label": "Weekend Only"
++                        }
++                    ],
++                    "help": "Controls overnight position holding behavior for Turbo mode."
+                 }
+             ]
+         }
+diff --git a/index.html b/index.html
+index 135ffd5..5968d3b 100644
+--- a/index.html
++++ b/index.html
+@@ -76,8 +76,8 @@
+ 
+                         <div class="form-group">
+                             <label for="capital" class="form-label">Capital (₹)</label>
+-                            <input type="number" id="capital" name="capital" class="form-control" value="100000" min="1"
+-                                required />
++                            <input type="number" id="capital" name="capital" class="form-control" value="1500000"
++                                min="1" required />
+                         </div>
+ 
+                         <div class="form-group">
