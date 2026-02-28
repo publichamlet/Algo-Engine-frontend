@@ -1,257 +1,328 @@
-# BePlus Algo — Frontend (Backtesting Web UI)
+# BePlus Algo --- Frontend (Backtesting Web UI)
 
-This repository contains the **BePlus Algo Trading** frontend web application.
-It is a **lightweight, framework-free** UI for configuring, triggering, and visualizing **algorithmic backtests** executed by the BePlus Algo backend.
+Version: 3.0\
+Last Updated: 2026
 
-The frontend is intentionally kept simple (HTML/CSS/Vanilla JS) to make backend integration, debugging, and hosting straightforward.
+------------------------------------------------------------------------
 
----
+## Overview
 
-## What this UI does
+This repository contains the BePlus Algo Trading frontend web
+application.
 
-I use this UI to:
+It is a lightweight, framework-free web interface for configuring,
+triggering, and visualizing algorithmic backtests executed by the BePlus
+Algo backend.
 
-* Select **Broker**, **Instrument**, **Timeframe**, and **IST start/end times**
-* Select a **Strategy**
-* Auto-generate **strategy parameters** dynamically from a JSON config
-* Trigger a **Run Backtest** API call
-* Visualize results:
+The UI is intentionally built using HTML, CSS, and Vanilla JavaScript
+only to ensure:
 
-  * Summary KPIs (trades, win rate, gross/net PnL, charges, capital)
-  * Candle chart with trades overlay (via **TradingView Lightweight Charts**)
-  * Trades table + signals modal
-* Delete the last run (when supported by backend)
+-   Simple backend integration\
+-   Transparent debugging\
+-   Static hosting compatibility\
+-   Full control over performance rendering
 
----
+------------------------------------------------------------------------
 
-## Tech stack
+## Tech Stack
 
-* **HTML** (`index.html`)
-* **CSS** (`styles.css`)
-* **Vanilla JavaScript**
-* **TradingView Lightweight Charts** (loaded via CDN)
-* **Fetch API** for backend communication
+-   HTML (index.html)
+-   CSS (styles.css)
+-   Vanilla JavaScript (app.js, ui_options.js)
+-   TradingView Lightweight Charts (CDN)
+-   Fetch API
 
-No React/Angular/Vue is used.
+No frontend framework is used.
 
----
+------------------------------------------------------------------------
 
-## Current project structure (actual)
+## Current Project Structure
 
-```
-/
-├── index.html
-├── styles.css
-├── app.js
-├── ui_options.js
-├── dummy-data.js
-├── config/
-│   └── ui-options.json
-└── README.md
-```
+    /
+    ├── index.html
+    ├── styles.css
+    ├── app.js
+    ├── ui_options.js
+    ├── dummy-data.js
+    ├── config/
+    │   └── ui-options.json
+    └── README.md
 
----
+------------------------------------------------------------------------
 
-## Configuration (UI Options)
+## UI Configuration System
 
-The UI options (dropdown lists + strategy parameter schema) are driven from:
+All dropdowns and strategy parameters are controlled by:
 
-* `config/ui-options.json`
+config/ui-options.json
 
-This JSON controls:
+This JSON defines:
 
-* Broker dropdown options
-* Instrument dropdown options
-* Strategy dropdown options
-* Strategy parameter fields (auto-created based on selected strategy)
-* Strategy rules like **whether instrument selection is required**
+-   Broker options
+-   Instrument options
+-   Strategy list
+-   Strategy parameters
+-   Strategy behavior rules (e.g., requires instrument)
 
-### Example strategy entry
+------------------------------------------------------------------------
 
-```json
-{
-  "id": "ema_crossover",
-  "label": "EMA Crossover",
-  "requires_instrument": true,
-  "params": [
-    {"key": "ema_fast", "label": "EMA Fast", "type": "number", "required": true, "default": 9},
-    {"key": "ema_slow", "label": "EMA Slow", "type": "number", "required": true, "default": 21}
-  ]
-}
-```
+## Backend Dependency
 
-If `requires_instrument` is set to `false`, the UI can disable/hide the instrument selector (useful for strategies that internally force a prefixed/default instrument).
+This frontend does not execute backtests locally.
 
----
+It requires the BePlus Algo backend (FastAPI).
 
-## Backend dependency
+API Base (in app.js):
 
-This frontend **does not run backtests locally**.
-It requires the BePlus Algo backend (FastAPI) to be running.
-
-### API base URL
-
-In `app.js`, set:
-
-```js
+``` js
 const API_BASE = "http://localhost:8000";
 ```
 
-### Endpoints used (current)
+Endpoints Used:
 
-* Run backtest:
+-   POST /api/backtests/run\
+-   GET /api/backtests/{run_id}
 
-  * `POST ${API_BASE}/api/backtests/run`
-* Fetch run by id (used for refresh/polling patterns):
+------------------------------------------------------------------------
 
-  * `GET  ${API_BASE}/api/backtests/{run_id}`
+## Request Payload Structure
 
-(Exact backend availability depends on the server implementation.)
+The UI sends:
 
----
+-   broker
+-   instrument_id
+-   timeframe
+-   start_ist
+-   end_ist
+-   capital
+-   qty
+-   strategy
+-   strategy_params
+-   feature_pack
 
-## Request payload (sent from UI)
+------------------------------------------------------------------------
 
-The UI builds a payload from the form, including:
+# KPI Dashboard System
 
-* `broker`
-* `instrument_id`
-* `timeframe`
-* `start_ist`, `end_ist`
-* `capital`, `qty`
-* `strategy`
-* `strategy_params` (dynamic values read from generated inputs)
-* optional feature settings (e.g., `feature_pack`)
+The KPI system provides:
 
----
+-   Professional definitions
+-   Structured evaluation ranges
+-   Risk grading guidance
+-   Clear calculation logic
+-   Split-value display for key metrics
 
-## Expected response contract
+Net PnL and Max Drawdown display both absolute and percentage values.
 
-The UI expects the backend response to be compatible with:
+------------------------------------------------------------------------
 
-```json
-{
-  "run_id": "backtest-YYYYMMDD-###",
-  "summary": {
-    "total_trades": 10,
-    "winning_trades": 7,
-    "losing_trades": 3,
-    "win_rate_pct": 70.0,
-    "gross_pnl": 720.50,
-    "total_charges": 264.00,
-    "net_pnl": 456.50,
-    "starting_capital": 200000.00,
-    "ending_capital": 200456.50
-  },
-  "candles": [
-    {"ts": "2026-01-15T15:10:00+05:30", "open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}
-  ],
-  "trades": [
-    {
-      "entry_ts": "...",
-      "entry_price": 0,
-      "exit_ts": "...",
-      "exit_price": 0,
-      "qty": 1,
-      "gross_pnl": 0,
-      "charges": 0,
-      "net_pnl": 0,
-      "signals_json": "{...}",
-      "entry_signals_json": "{...}",
-      "exit_signals_json": "{...}"
-    }
-  ]
-}
-```
+# KPI Documentation (Complete)
 
-Notes:
+## Net PnL
 
-* Candle timestamps are ISO-8601 strings and may include timezone offsets (e.g., `+05:30`).
-* Trade signal metadata is stored as JSON strings:
+Definition: Net profit or loss after deducting all trading charges.\
+Calculation: Gross PnL − Total Charges.
 
-  * `signals_json`
-  * `entry_signals_json`
-  * `exit_signals_json`
+Evaluation (as % of Starting Capital): - Negative → Not usable - 0--5% →
+Very weak - 5--10% → Average - 10--20% → Good - 20--40% → Very good -
+40%+ → Excellent
 
----
+Side Value: Percentage shows return relative to Starting Capital.
 
-## Local development
+------------------------------------------------------------------------
 
-Because browsers restrict `fetch()` calls from `file://`, I should run a local server.
+## Profit Factor
 
-### Option 1 — VS Code Live Server
+Definition: Measures profit earned for every unit of loss.\
+Calculation: Gross Profit ÷ Gross Loss.
 
-1. Install **Live Server** extension
-2. Right-click `index.html`
-3. Choose **Open with Live Server**
+Evaluation: - \<1.0 → Losing - 1.0--1.2 → Weak - 1.2--1.4 → Average -
+1.4--1.8 → Good - 1.8--2.5 → Very good - \>2.5 → Excellent
 
-### Option 2 — Python static server
+Higher is better.
 
-```bash
-python -m http.server 5500
-```
+------------------------------------------------------------------------
 
-Then open:
+## Max Drawdown
 
-```
-http://localhost:5500
-```
+Definition: Largest decline in account value from a previous peak to the
+lowest point before a new peak forms.\
+Calculation: (Peak Equity − Lowest Equity) ÷ Peak Equity.
 
----
+Evaluation: - \>40% → Very High Risk - 30--40% → Risky - 20--30% →
+Average - 10--20% → Good - \<10% → Excellent
 
-## How the UI works (high level)
+Side Value: - Amount = Maximum loss from peak - Percentage = Loss
+relative to peak equity
 
-1. On page load, `ui_options.js` loads `config/ui-options.json`
-2. It populates broker/instrument/strategy dropdowns
-3. When I select a strategy, it dynamically renders the required parameter inputs
-4. When I click **Run Backtest**:
+Lower is better.
 
-   * the form is validated
-   * payload is built
-   * `app.js` calls `POST /api/backtests/run`
-5. Response is rendered into:
+------------------------------------------------------------------------
 
-   * KPI cards
-   * candle chart
-   * trades table
-   * modals (signals / fullscreen chart)
+## Total Trades
 
----
+Definition: Number of completed trades in the backtest.
 
-## Dummy data (optional)
+------------------------------------------------------------------------
 
-`dummy-data.js` exists for offline UI testing.
-It is currently commented out in `index.html`.
+## Win Rate
 
-To test UI without backend, I can enable it by uncommenting:
+Definition: Percentage of trades that ended in profit.\
+Calculation: Winning Trades ÷ Total Trades.
 
-```html
-<!-- <script src="dummy-data.js"></script> -->
-```
+Evaluation: - \<40% → Weak - 40--50% → Average - 50--60% → Good -
+60--70% → Very good - \>70% → Excellent
 
-(And updating `app.js` to use dummy response logic if needed.)
+------------------------------------------------------------------------
 
----
+## Expectancy (₹ per trade)
+
+Definition: Average net profit per trade.\
+Calculation: Net PnL ÷ Total Trades.
+
+Evaluation: - Negative → Not usable - Near zero → Very weak - Small
+positive → Average - Strong positive → Good - High and consistent →
+Excellent
+
+------------------------------------------------------------------------
+
+## Payoff Ratio
+
+Definition: Average win size relative to average loss size.\
+Calculation: Average Win ÷ Average Loss.
+
+Evaluation: - \<0.8 → Weak - 0.8--1.0 → Average - 1.0--1.5 → Good -
+1.5--2.0 → Very good - \>2.0 → Excellent
+
+------------------------------------------------------------------------
+
+## Charges Ratio
+
+Definition: Portion of gross profit consumed by trading costs.\
+Calculation: Total Charges ÷ Gross Profit.
+
+Evaluation: - \>60% → Very inefficient - 40--60% → Risky - 30--40% →
+Average - 20--30% → Good - \<20% → Excellent
+
+Lower is better.
+
+------------------------------------------------------------------------
+
+## Recovery Factor
+
+Definition: Efficiency of profit relative to drawdown.\
+Calculation: Net Profit ÷ Max Drawdown.
+
+Evaluation: - \<1.0 → Weak - 1.0--1.5 → Average - 1.5--2.0 → Good -
+2.0--3.0 → Very good - \>3.0 → Excellent
+
+------------------------------------------------------------------------
+
+## Profitable Months %
+
+Definition: Percentage of months with positive Net PnL.\
+Calculation: Profitable Months ÷ Total Months.
+
+Evaluation: - \<40% → Inconsistent - 40--55% → Average - 55--65% →
+Good - 65--75% → Very good - \>75% → Excellent
+
+------------------------------------------------------------------------
+
+## Worst Month Net
+
+Definition: Largest monthly net loss.
+
+Evaluation: - \>25% → Very risky - 15--25% → Risky - 10--15% → Average -
+5--10% → Good - \<5% → Excellent
+
+------------------------------------------------------------------------
+
+## Longest Losing Streak
+
+Definition: Maximum consecutive losing trades.
+
+Evaluation: - \>10 → Very stressful - 6--10 → Risky - 4--6 → Average -
+2--4 → Good - 0--2 → Excellent
+
+------------------------------------------------------------------------
+
+## Avg Trades/Day
+
+Definition: Average number of trades per trading day.
+
+Higher values increase cost exposure.\
+Lower values reduce capital deployment speed.
+
+------------------------------------------------------------------------
+
+## Avg Holding Time
+
+Definition: Average duration a trade remains open.
+
+Shorter duration reduces overnight risk.\
+Longer duration increases exposure to volatility.
+
+------------------------------------------------------------------------
+
+## Overnight Trades %
+
+Definition: Percentage of trades held beyond same trading day.
+
+Evaluation: - \>40% → High gap risk - 20--40% → Moderate - \<20% → Lower
+risk
+
+------------------------------------------------------------------------
+
+## Gross PnL
+
+Definition: Total profit before charges.
+
+------------------------------------------------------------------------
+
+## Total Charges
+
+Definition: Estimated brokerage, exchange fees, and taxes.
+
+------------------------------------------------------------------------
+
+## Winning Trades
+
+Definition: Number of profitable trades.
+
+------------------------------------------------------------------------
+
+## Losing Trades
+
+Definition: Number of losing trades.
+
+------------------------------------------------------------------------
+
+## Starting Capital
+
+Definition: Initial capital used for simulation.
+
+------------------------------------------------------------------------
+
+## Ending Capital
+
+Definition: Final capital after backtest.\
+Calculation: Starting Capital + Net PnL.
+
+------------------------------------------------------------------------
 
 ## Deployment
 
-This is a **static frontend**, so I can host it on:
+This is a static frontend and can be hosted on:
 
-* GitHub Pages
-* Netlify / Vercel
-* AWS S3 static hosting
-* Any Nginx/Apache server
+-   GitHub Pages
+-   Netlify
+-   Vercel
+-   AWS S3
+-   Nginx / Apache
 
----
-
-## Notes
-
-* Time inputs are collected as **IST datetime-local** values from the form.
-* Display timezone depends on chart library parsing and JS date handling.
-* The UI is designed for clarity and debugging over minification.
-
----
+------------------------------------------------------------------------
 
 ## License
 
-Private / Internal project — BePlus Algo Trading
+Private / Internal Project\
+BePlus Algo Trading

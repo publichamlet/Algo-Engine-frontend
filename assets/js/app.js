@@ -1,6 +1,6 @@
 // ===== CONFIG =====
-const API_BASE = "http://localhost:8000"; // Change this to your backend URL
-// const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
+// const API_BASE = "http://localhost:8000"; // Change this to your backend URL
+const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
 
 // ===== STATE MANAGEMENT =====
 const state = {
@@ -545,10 +545,32 @@ function renderSummary(summary, trades) {
     setText('kpiGrossPnl', formatCurrency(summary.gross_pnl));
     setText('kpiCharges', formatCurrency(summary.total_charges));
 
-    const netPnlEl = document.getElementById('kpiNetPnl');
-    if (netPnlEl) {
-        netPnlEl.textContent = formatCurrency(summary.net_pnl);
-        netPnlEl.className = 'kpi-value ' + (Number(summary.net_pnl || 0) >= 0 ? 'positive' : 'negative');
+    // -----------------------
+    // Net PnL (₹ + % of starting capital)
+    // -----------------------
+    const netPnl = Number(summary.net_pnl || 0);
+    const startingCap = Number(summary.starting_capital || 0);
+    
+    // New UI (split): kpiNetPnlAmt + kpiNetPnlPct
+    const netPnlAmtEl = document.getElementById('kpiNetPnlAmt');
+    const netPnlPctEl = document.getElementById('kpiNetPnlPct');
+    
+    if (netPnlAmtEl && netPnlPctEl) {
+        netPnlAmtEl.textContent = formatCurrency(netPnl);
+    
+        // Keep the green/red color on the amount (same behavior as before)
+        netPnlAmtEl.className = (netPnl >= 0) ? 'positive' : 'negative';
+    
+        // Percent vs initial capital (guard divide-by-zero)
+        const pct = (startingCap > 0) ? ((netPnl / startingCap) * 100) : 0;
+        netPnlPctEl.textContent = (startingCap > 0) ? formatPercent(pct, 1) : '-';
+    } else {
+        // Old UI fallback: kpiNetPnl only
+        const netPnlEl = document.getElementById('kpiNetPnl');
+        if (netPnlEl) {
+            netPnlEl.textContent = formatCurrency(netPnl);
+            netPnlEl.className = 'kpi-value ' + (netPnl >= 0 ? 'positive' : 'negative');
+        }
     }
 
     setText('kpiStartingCapital', formatCurrency(summary.starting_capital));

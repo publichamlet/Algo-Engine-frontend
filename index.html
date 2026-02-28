@@ -165,21 +165,23 @@
                             <!-- ========================= -->
                             <!-- 1️⃣ HEADLINE (Outcome) -->
                             <!-- ========================= -->
-                            <div class="kpi-card kpi-primary" data-tooltip="Profit after charges.
-This is the real score.
-Good systems keep Net positive across most months and regimes.">
+                            <div class="kpi-card kpi-primary"
+                                data-tooltip="Net profit/loss after all charges.&#10;How it is calculated: Gross PnL − Total Charges.&#10;How to judge: Negative = Not usable | 0–5% = Very weak | 5–10% = Average | 10–20% = Good | 20–40% = Very good | 40%+ = Excellent.&#10;Side value: % shows Net PnL as a return on Starting Capital.">
                                 <div class="kpi-label">Net PnL</div>
-                                <div class="kpi-value" id="kpiNetPnl">-</div>
+                                <div class="kpi-value kpi-split">
+                                    <span id="kpiNetPnlAmt">-</span>
+                                    <span class="kpi-subvalue" id="kpiNetPnlPct">-</span>
+                                </div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Gross Profit ÷ Gross Loss.
-> 1.0 means profitable.
-~1.2+ is usable; ~1.5+ is strong (especially after costs).">
+
+                            <div class="kpi-card"
+                                data-tooltip="Shows how much profit you make for every ₹1 of loss.&#10;How it is calculated: Gross Profit ÷ Gross Loss.&#10;How to judge: <1.0 = Losing | 1.0–1.2 = Weak | 1.2–1.4 = Average | 1.4–1.8 = Good | 1.8–2.5 = Very good | >2.5 = Excellent.&#10;Higher is better.">
                                 <div class="kpi-label">Profit Factor</div>
                                 <div class="kpi-value" id="kpiProfitFactor">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Largest peak-to-trough drop in equity.
-Lower is safer.
-As a rule: keep DD < 20–25% of capital for comfort; <15% is strong.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Largest drop from a peak to a low in your equity curve.&#10;This represents the worst fall you had to tolerate.&#10;How it is calculated: (Peak Equity − Lowest Equity) ÷ Peak Equity.&#10;How to judge: >40% = Very high risk | 30–40% = Risky | 20–30% = Average | 10–20% = Good | <10% = Excellent.&#10;Lower drawdown means smoother performance and lower risk.&#10;Side value: ₹ shows the maximum loss amount from peak, % shows loss relative to the peak equity.&#10;Lower is better.">
                                 <div class="kpi-label">Max Drawdown</div>
                                 <div class="kpi-value kpi-split">
                                     <span id="kpiMaxDrawdownAmt">-</span>
@@ -190,21 +192,19 @@ As a rule: keep DD < 20–25% of capital for comfort; <15% is strong.">
                             <!-- ========================= -->
                             <!-- 2️⃣ CORE EDGE -->
                             <!-- ========================= -->
-                            <div class="kpi-card" data-tooltip="Total number of completed trades.
-More trades = more statistical confidence.
-For quick scalps, 200+ trades is a decent sample; 500+ is stronger.">
+                            <div class="kpi-card" data-tooltip="Number of completed trades in the backtest.">
                                 <div class="kpi-label">Total Trades</div>
                                 <div class="kpi-value" id="kpiTotalTrades">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="% of trades that finished positive.
-High win rate feels good, but it can hide big losses.
-Always judge with Profit Factor + Drawdown together.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Percentage of trades that ended in profit.&#10;How it is calculated: Winning Trades ÷ Total Trades.&#10;How to judge: <40% = Weak | 40–50% = Average | 50–60% = Good | 60–70% = Very good | 70%+ = Excellent.&#10;Always judge together with Profit Factor and Drawdown.">
                                 <div class="kpi-label">Win Rate</div>
                                 <div class="kpi-value" id="kpiWinRate">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Average Net PnL per trade.
-Positive expectancy is mandatory.
-Higher expectancy gives breathing room against slippage and bad regimes.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Average net profit per trade.&#10;How it is calculated: Net PnL ÷ Total Trades.&#10;How to judge: Negative = Not usable | Near zero = Very weak | Small positive = Average | Strong positive = Good | High and consistent = Excellent.&#10;Higher expectancy gives more cushion against costs and slippage.">
                                 <div class="kpi-label">Expectancy (₹/trade)</div>
                                 <div class="kpi-value" id="kpiExpectancy">-</div>
                             </div>
@@ -212,20 +212,20 @@ Higher expectancy gives breathing room against slippage and bad regimes.">
                             <!-- ========================= -->
                             <!-- 3️⃣ TRADE QUALITY -->
                             <!-- ========================= -->
-                            <div class="kpi-card" data-tooltip="Average Win ÷ Average Loss. 
-> 1.0 is ideal.
-< 1.0 can still work, but then win rate must be high and drawdown controlled.">
+                            <div class="kpi-card"
+                                data-tooltip="Compares average win size to average loss size.&#10;How it is calculated: Average Win ÷ Average Loss.&#10;How to judge: <0.8 = Weak | 0.8–1.0 = Average | 1.0–1.5 = Good | 1.5–2.0 = Very good | >2.0 = Excellent.&#10;Higher is better.">
                                 <div class="kpi-label">Payoff Ratio</div>
                                 <div class="kpi-value" id="kpiPayoffRatio">-</div>
                             </div>
+
                             <div class="kpi-card"
-                                data-tooltip="Percentage of gross profit consumed by trading costs. Lower is better. <30% excellent | 30-50% acceptable | >50% risky">
+                                data-tooltip="How much of your gross profit is eaten by charges.&#10;How it is calculated: Total Charges ÷ Gross Profit.&#10;How to judge: >60% = Very inefficient | 40–60% = Risky | 30–40% = Average | 20–30% = Good | <20% = Excellent.&#10;Lower is better.">
                                 <div class="kpi-label">CHARGES RATIO</div>
                                 <div class="kpi-value" id="kpiChargesRatio">0.0%</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Net Profit ÷ Max Drawdown.
-> 1.0 is good; > 2.0 is strong.
-Shows how efficiently the system earns relative to pain.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Shows how efficiently the strategy converts risk into profit.&#10;How it is calculated: Net Profit ÷ Max Drawdown.&#10;How to judge: <1.0 = Weak | 1.0–1.5 = Average | 1.5–2.0 = Good | 2.0–3.0 = Very good | >3.0 = Excellent.&#10;Higher is better.">
                                 <div class="kpi-label">Recovery Factor</div>
                                 <div class="kpi-value" id="kpiRecoveryFactor">-</div>
                             </div>
@@ -233,20 +233,20 @@ Shows how efficiently the system earns relative to pain.">
                             <!-- ========================= -->
                             <!-- 4️⃣ STABILITY -->
                             <!-- ========================= -->
-                            <div class="kpi-card" data-tooltip="% months with positive Net.
-> 60% is usually healthy.
-Low % means profits may be concentrated in a few months.">
+                            <div class="kpi-card"
+                                data-tooltip="Percentage of months that ended with positive Net PnL.&#10;How it is calculated: Profitable Months ÷ Total Months.&#10;How to judge: <40% = Inconsistent | 40–55% = Average | 55–65% = Good | 65–75% = Very good | >75% = Excellent.">
                                 <div class="kpi-label">Profitable Months %</div>
                                 <div class="kpi-value" id="kpiProfitableMonthsPct">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Most negative month Net PnL.
-Should be tolerable vs your risk limit.
-If worst month is too large, add regime filters or reduce overnight exposure.">
+
+                            <div class="kpi-card"
+                                data-tooltip="The biggest single monthly loss (Net PnL) in the backtest.&#10;How to judge (as % of capital): >25% = Very risky | 15–25% = Risky | 10–15% = Average | 5–10% = Good | <5% = Excellent.&#10;Lower is safer.">
                                 <div class="kpi-label">Worst Month Net</div>
                                 <div class="kpi-value" id="kpiWorstMonthNet">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Max consecutive losing trades.
-Size positions so you can survive this streak + extra buffer.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Maximum number of losing trades in a row.&#10;This helps plan risk and position sizing.&#10;How to judge: >10 = Very stressful | 6–10 = Risky | 4–6 = Average | 2–4 = Good | 0–2 = Excellent.">
                                 <div class="kpi-label">Longest Losing Streak</div>
                                 <div class="kpi-value" id="kpiLongestLosingStreak">-</div>
                             </div>
@@ -254,21 +254,20 @@ Size positions so you can survive this streak + extra buffer.">
                             <!-- ========================= -->
                             <!-- 5️⃣ EXECUTION STYLE -->
                             <!-- ========================= -->
-                            <div class="kpi-card" data-tooltip="How active the strategy is.
-Very high = more costs + execution risk.
-Very low = slower feedback and may miss opportunities.">
+                            <div class="kpi-card"
+                                data-tooltip="Average number of trades taken per trading day.&#10;Very high activity increases costs and execution risk.&#10;Very low activity may grow slower and gives slower feedback.&#10;Best range depends on the strategy style (scalp vs swing).">
                                 <div class="kpi-label">Avg Trades/Day</div>
                                 <div class="kpi-value" id="kpiAvgTradesPerDay">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Average time from entry to exit.
-Should match the strategy style.
-Short holding reduces gap risk; longer holding may need stricter risk controls.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Average time a trade stays open.&#10;Short holding time usually reduces gap risk.&#10;Long holding time increases exposure to sudden moves.&#10;Best value depends on the strategy style.">
                                 <div class="kpi-label">Avg Holding Time</div>
                                 <div class="kpi-value" id="kpiAvgHoldingTime">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="% trades where entry and exit are on different days.
-Higher overnight % increases gap/overnight risk.
-Reduce if you want smoother equity and lower tail risk.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Percentage of trades where entry and exit happen on different days.&#10;Higher overnight % increases gap and overnight risk.&#10;How to judge: >40% = High risk | 20–40% = Moderate | <20% = Lower risk.&#10;Lower is generally safer for smoother equity.">
                                 <div class="kpi-label">Overnight Trades %</div>
                                 <div class="kpi-value" id="kpiOvernightTradesPct">-</div>
                             </div>
@@ -276,35 +275,38 @@ Reduce if you want smoother equity and lower tail risk.">
                             <!-- ========================= -->
                             <!-- 6️⃣ SUPPORTING METRICS -->
                             <!-- ========================= -->
-                            <div class="kpi-card" data-tooltip="Profit before brokerage/taxes/fees.
-Looks optimistic; always compare with Net PnL for realism.">
+                            <div class="kpi-card"
+                                data-tooltip="Total profit/loss before deducting charges.&#10;This can look optimistic.&#10;Always compare with Net PnL to see the true outcome after costs.">
                                 <div class="kpi-label">Gross PnL</div>
                                 <div class="kpi-value" id="kpiGrossPnl">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Estimated trading costs (brokerage + exchange + taxes etc.).
-Lower is better.
-If charges are a big % of Gross, increase expectancy or reduce churn.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Total estimated trading costs (brokerage, exchange fees, taxes, etc.).&#10;Lower is better.&#10;If charges are high relative to Gross PnL, the strategy may be inefficient.">
                                 <div class="kpi-label">Total Charges</div>
                                 <div class="kpi-value" id="kpiCharges">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Count of profitable trades.
-Helps sanity-check whether results rely on a few lucky wins.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Count of profitable trades.&#10;Useful to check whether results come from many small wins or a few big wins.&#10;Best reviewed together with Losing Trades, Payoff Ratio, and Profit Factor.">
                                 <div class="kpi-label">Winning Trades</div>
                                 <div class="kpi-value" id="kpiWinningTrades">-</div>
                             </div>
 
-                            <div class="kpi-card" data-tooltip="Count of losing trades.
-Used with Longest Losing Streak to plan risk and sizing.">
+                            <div class="kpi-card"
+                                data-tooltip="Count of losing trades.&#10;Useful for understanding how often the strategy loses and how difficult it may feel psychologically.&#10;Best reviewed with Longest Losing Streak and Drawdown.">
                                 <div class="kpi-label">Losing Trades</div>
                                 <div class="kpi-value" id="kpiLosingTrades">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Capital used to simulate position sizing.
-Use the same capital you plan to deploy in live.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Initial capital used for this backtest.&#10;This value is used to size positions and to compute return % and drawdown %.&#10;Use the same capital you plan to deploy in live trading.">
                                 <div class="kpi-label">Starting Capital</div>
                                 <div class="kpi-value" id="kpiStartingCapital">-</div>
                             </div>
-                            <div class="kpi-card" data-tooltip="Starting capital + Net PnL.
-Useful to compare strategies on equal capital over same period.">
+
+                            <div class="kpi-card"
+                                data-tooltip="Final capital after the backtest.&#10;How it is calculated: Starting Capital + Net PnL.&#10;Useful to compare different strategies using the same starting capital and period.">
                                 <div class="kpi-label">Ending Capital</div>
                                 <div class="kpi-value" id="kpiEndingCapital">-</div>
                             </div>
