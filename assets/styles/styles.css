@@ -1343,10 +1343,68 @@ select.form-control {
     cursor: default;
 }
 
+
+/* ===== KPI Tooltips (hover cards) ===== */
+.kpi-card {
+    position: relative; /* needed for tooltip positioning */
+    z-index: 1; /* ensure tooltips appear above other content */
+}
+
+.kpi-card[data-tooltip] {
+    cursor: help;
+}
+
+/* Tooltip bubble */
+.kpi-card[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 10px);
+    transform: translateX(-50%);
+    width: min(220px, 92vw);
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #000;
+    backdrop-filter: none; /* disable backdrop blur for better readability */
+    color: #fff;
+    border: 1px solid rgba(50, 184, 198, 0.45);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    font-size: 13px;
+    line-height: 1.45;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+    white-space: pre-line; /* honor \n */
+    z-index: 9999;
+
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+/* Tooltip arrow */
+.kpi-card[data-tooltip]::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 2px);
+    transform: translateX(-50%);
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent transparent rgba(0, 0, 0, 0.96) transparent;
+
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.kpi-card[data-tooltip]:hover::after,
+.kpi-card[data-tooltip]:hover::before {
+    opacity: 1;
+}
 .kpi-card:hover {
     border-color: var(--color-primary);
     box-shadow: var(--shadow-lg);
     transform: translateY(-4px);
+    z-index: 9998;
 }
 
 .kpi-card.kpi-primary {
@@ -1377,6 +1435,21 @@ select.form-control {
 
 .kpi-value.negative {
     color: var(--color-error);
+}
+
+/* ===== KPI Split Values (e.g., Drawdown ₹ and %) ===== */
+.kpi-value.kpi-split {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-12);
+}
+
+.kpi-value.kpi-split .kpi-subvalue {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
 }
 
 /* ===== Chart Section ===== */
@@ -1410,7 +1483,7 @@ select.form-control {
     color: #fff;
     padding: 12px 16px;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 13px;
     border: 1px solid rgba(50, 184, 198, 0.5);
     backdrop-filter: blur(10px);
     display: none;
