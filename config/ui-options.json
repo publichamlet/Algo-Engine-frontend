@@ -283,6 +283,41 @@
                     "help": "Controls overnight position holding behavior for Turbo mode."
                 }
             ]
+        },
+        {
+            "id": "beplus_momentum_prime",
+            "label": "BePlus Momentum Prime",
+            "requires_instrument": true,
+            "params": []
+        },
+        {
+            "id": "beplus_momentum_prime_swing",
+            "label": "BePlus Momentum Prime Swing",
+            "requires_instrument": true,
+            "params": [
+                {
+                    "key": "overnight_mode",
+                    "label": "Overnight Mode",
+                    "type": "select",
+                    "required": true,
+                    "default": "all",
+                    "options": [
+                        {
+                            "value": "all",
+                            "label": "All"
+                        },
+                        {
+                            "value": "single_day",
+                            "label": "Single Day"
+                        },
+                        {
+                            "value": "weekend_only",
+                            "label": "Weekend Only"
+                        }
+                    ],
+                    "help": "Controls overnight position holding behavior for Prime Swing mode."
+                }
+            ]
         }
     ]
 }

@@ -16,6 +16,10 @@ const STRATEGY_LABEL_OVERRIDES = {
     // UI-only friendly names (backend ids stay the same)
     beplus_momentum_stable: "BePlus Momentum Stable",
     beplus_momentum_turbo: "BePlus Momentum Turbo",
+
+    // NEW: Additional BePlus momentum strategies (same pattern as Stable/Turbo)
+    beplus_momentum_prime: "BePlus Momentum Prime",
+    beplus_momentum_prime_swing: "BePlus Momentum Prime Swing",
 };
 
 function applyRequired(el, required) {
