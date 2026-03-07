@@ -1,6 +1,6 @@
 // ===== CONFIG =====
-const API_BASE = "http://localhost:8000"; // Change this to your backend URL
-// const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
+// const API_BASE = "http://localhost:8000"; // Change this to your backend URL
+const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
 
 // ===== STATE MANAGEMENT =====
 const state = {
