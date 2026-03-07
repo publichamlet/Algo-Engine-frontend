@@ -1132,6 +1132,77 @@ select.form-control {
     font-size: 16px;
 }
 
+/* ===== Mobile / Tablet Drawer Controls ===== */
+.mobile-toolbar {
+    display: none;
+    justify-content: flex-end;
+    margin-bottom: var(--space-16);
+}
+
+.mobile-drawer-toggle {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    padding: 0;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-primary);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.mobile-drawer-toggle:hover:not(:disabled) {
+    background: var(--color-secondary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.mobile-drawer-toggle .btn-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.drawer-header {
+    display: none;
+}
+
+.drawer-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin: 0;
+}
+
+.drawer-close-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+    padding: var(--space-4);
+    border-radius: var(--radius-base);
+    transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.drawer-close-btn:hover {
+    background: var(--color-secondary);
+    color: var(--color-text);
+}
+
+.drawer-close-btn:focus-visible {
+    outline: var(--focus-outline);
+    box-shadow: var(--focus-ring);
+}
+
+.form-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(var(--color-slate-900-rgb), 0.55);
+    z-index: 119;
+    backdrop-filter: blur(3px);
+}
+
 /* ===== Content Area ===== */
 .content-area {
     flex: 1;
@@ -1159,7 +1230,7 @@ select.form-control {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 300;
     backdrop-filter: blur(4px);
     animation: fadeIn var(--duration-normal) var(--ease-standard);
 }
@@ -1621,26 +1692,27 @@ select.form-control {
     position: fixed;
     bottom: var(--space-24);
     right: var(--space-24);
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     border-radius: var(--radius-full);
-    background: var(--color-primary);
-    color: var(--color-btn-primary-text);
-    border: none;
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 50;
+    z-index: 140;
     box-shadow: var(--shadow-lg);
     transition: all var(--duration-normal) var(--ease-standard);
-    font-size: 18px;
+    font-size: 20px;
 }
 
 .back-to-top-btn:hover:not(.hidden) {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-xl);
-    background: var(--color-primary-hover);
+    box-shadow: var(--shadow-lg);
+    background: var(--color-secondary);
+    color: var(--color-primary-hover);
 }
 
 .back-to-top-btn:focus-visible {
@@ -1947,14 +2019,46 @@ select.form-control {
 /* ===== Responsive Design ===== */
 @media (max-width: 1200px) {
     .app-main {
-        flex-direction: column;
+        display: block;
         padding: var(--space-20);
-        gap: var(--space-20);
+    }
+
+    .mobile-toolbar {
+        display: flex;
+    }
+
+    .drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--space-16);
+        padding-bottom: var(--space-12);
+        border-bottom: 1px solid var(--color-card-border-inner);
     }
 
     .form-sidebar {
-        flex: 1;
-        max-height: none;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: min(420px, 92vw);
+        height: 100vh;
+        max-height: 100vh;
+        background: var(--color-surface);
+        z-index: 120;
+        padding: var(--space-20);
+        padding-right: var(--space-16);
+        overflow-y: auto;
+        overflow-x: hidden;
+        box-shadow: var(--shadow-lg);
+        transform: translateX(100%);
+        transition: transform var(--duration-normal) var(--ease-standard);
+    }
+
+    .form-sidebar.drawer-open {
+        transform: translateX(0);
+    }
+
+    .content-area {
         padding-right: 0;
     }
 
@@ -1964,6 +2068,10 @@ select.form-control {
 
     .chart-container {
         height: 300px;
+    }
+
+    body.drawer-active {
+        overflow: hidden;
     }
 }
 
@@ -2075,6 +2183,15 @@ select.form-control {
     }
 
     .form-group {
+        margin-bottom: var(--space-12);
+    }
+
+    .form-sidebar {
+        width: 100vw;
+        padding: var(--space-16);
+    }
+
+    .mobile-toolbar {
         margin-bottom: var(--space-12);
     }
 

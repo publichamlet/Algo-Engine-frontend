@@ -1,6 +1,6 @@
 // ===== CONFIG =====
-// const API_BASE = "http://localhost:8000"; // Change this to your backend URL
-const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
+const API_BASE = "http://localhost:8000"; // Change this to your backend URL
+// const API_BASE = "https://api.beplusalgo.trade";  // Production backend URL
 
 // ===== STATE MANAGEMENT =====
 const state = {
@@ -130,6 +130,51 @@ function setLoading(isLoading) {
 }
 
 /**
+ * Check whether current viewport should use drawer behavior.
+ */
+function isDrawerViewport() {
+    return window.innerWidth <= 1200;
+}
+
+/**
+ * Open form drawer for tablet/mobile view.
+ */
+function openFormDrawer() {
+    const sidebar = document.getElementById('formSidebar');
+    const overlay = document.getElementById('formDrawerOverlay');
+
+    if (!isDrawerViewport()) return;
+
+    if (sidebar) {
+        sidebar.classList.add('drawer-open');
+    }
+
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+
+    document.body.classList.add('drawer-active');
+}
+
+/**
+ * Close form drawer for tablet/mobile view.
+ */
+function closeFormDrawer() {
+    const sidebar = document.getElementById('formSidebar');
+    const overlay = document.getElementById('formDrawerOverlay');
+
+    if (sidebar) {
+        sidebar.classList.remove('drawer-open');
+    }
+
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+
+    document.body.classList.remove('drawer-active');
+}
+
+/**
  * Validate form inputs before API call
  */
 function validateForm(formData) {
@@ -237,6 +282,12 @@ async function runBacktest() {
     if (!validation.isValid) {
         showError(validation.errors.join(", "));
         return;
+    }
+
+    // Close the parameter drawer FIRST on tablet/mobile,
+    // then show the loading overlay above the page.
+    if (isDrawerViewport()) {
+        closeFormDrawer();
     }
 
     setLoading(true);
@@ -1009,6 +1060,11 @@ document.getElementById('backtestForm').addEventListener('submit', (e) => {
     runBacktest();
 });
 
+// Form drawer controls
+document.getElementById('openFormDrawerBtn')?.addEventListener('click', openFormDrawer);
+document.getElementById('closeFormDrawerBtn')?.addEventListener('click', closeFormDrawer);
+document.getElementById('formDrawerOverlay')?.addEventListener('click', closeFormDrawer);
+
 // Delete button
 document.getElementById('deleteBtn').addEventListener('click', deleteRun);
 
@@ -1033,21 +1089,52 @@ document.querySelectorAll('.modal-close').forEach(btn => {
 const backToTopBtn = document.getElementById('backToTopBtn');
 const contentArea = document.querySelector('.content-area');
 
-contentArea.addEventListener('scroll', () => {
-    if (contentArea.scrollTop > 300) {
+/**
+ * Return the active scroll container based on viewport behavior.
+ * - Desktop: content area is the scroll container
+ * - Tablet/Mobile: window/page may become the scroll container
+ */
+function getActiveScrollTop() {
+    if (isDrawerViewport()) {
+        return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    }
+    return contentArea ? contentArea.scrollTop : 0;
+}
+
+/**
+ * Toggle back-to-top button visibility.
+ */
+function updateBackToTopVisibility() {
+    if (!backToTopBtn) return;
+
+    if (getActiveScrollTop() > 300) {
         backToTopBtn.classList.remove('hidden');
     } else {
         backToTopBtn.classList.add('hidden');
     }
-});
+}
+
+// Desktop/internal scroll container
+if (contentArea) {
+    contentArea.addEventListener('scroll', updateBackToTopVisibility);
+}
+
+// Tablet/mobile/page scroll
+window.addEventListener('scroll', updateBackToTopVisibility);
 
 backToTopBtn.addEventListener('click', () => {
-    contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+    if (isDrawerViewport()) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (contentArea) {
+        contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 });
 
-// Close modal on ESC key
+// Close modal / drawer on ESC key
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        closeFormDrawer();
+
         document.querySelectorAll('.modal').forEach(modal => {
             if (!modal.classList.contains('hidden')) {
                 const modalId = modal.id;  // ← ADDED

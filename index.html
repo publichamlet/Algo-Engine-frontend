@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-color-scheme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -30,8 +30,17 @@
         <!-- Main Content -->
         <main class="app-main">
             <!-- Left Sidebar - Form -->
-            <aside class="form-sidebar">
+            <aside class="form-sidebar" id="formSidebar">
+                <div class="drawer-header">
+                    <h2 class="drawer-title">Backtest Parameters</h2>
+                    <button type="button" id="closeFormDrawerBtn" class="drawer-close-btn"
+                        aria-label="Close Parameters">
+                        ✕
+                    </button>
+                </div>
+
                 <form id="backtestForm" class="backtest-form">
+
                     <!-- Common Fields Section -->
                     <fieldset class="form-section">
                         <legend class="form-legend">Market & Time</legend>
@@ -134,6 +143,14 @@
 
             <!-- Right Content Area -->
             <section class="content-area">
+
+                <!-- Mobile / Tablet Parameter Toggle -->
+                <div class="mobile-toolbar">
+                    <button type="button" id="openFormDrawerBtn" class="btn btn-sm btn-outline mobile-drawer-toggle">
+                        <span class="btn-icon">☰</span>
+                    </button>
+                </div>
+
                 <!-- Loading Overlay -->
                 <div id="loadingOverlay" class="loading-overlay hidden">
                     <div class="spinner-container">
@@ -473,6 +490,9 @@
                 </div>
             </section>
         </main>
+
+        <!-- Form Drawer Overlay -->
+        <div id="formDrawerOverlay" class="form-drawer-overlay hidden"></div>
 
         <!-- Back to Top Button -->
         <button id="backToTopBtn" class="back-to-top-btn hidden" title="Back to Top">
