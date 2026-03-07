@@ -20,6 +20,8 @@ const STRATEGY_LABEL_OVERRIDES = {
     // NEW: Additional BePlus momentum strategies (same pattern as Stable/Turbo)
     beplus_momentum_prime: "BePlus Momentum Prime",
     beplus_momentum_prime_swing: "BePlus Momentum Prime Swing",
+
+    beplus_momentum_breakout: "BePlus Momentum Breakout",
 };
 
 function applyRequired(el, required) {

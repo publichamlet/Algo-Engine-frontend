@@ -191,6 +191,8 @@ function buildPayload() {
         paramsToSend = {
             overnight_mode: rawParams.overnight_mode || "all",
         };
+    } else if (strategy === "beplus_momentum_breakout") {
+        paramsToSend = null; // omit in payload
     }
 
     // Auto-set HA flags + feature pack (based on CLI tests) for both Stable and Turbo.

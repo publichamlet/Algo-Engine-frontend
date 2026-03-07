@@ -231,12 +231,20 @@
             "label": "WIPRO (NSE EQ)"
         },
         {
+            "id": "NSE:NIFTYBANK-INDEX",
+            "label": "BANKNIFTY (NSE INDEX)"
+        },
+        {
             "id": "NFO:BANKNIFTY-FUT-202603",
             "label": "BANKNIFTY (NFO CUR FUT)"
         },
         {
             "id": "NFO:BANKNIFTY-FUT-202604",
             "label": "BANKNIFTY (NFO NXT FUT)"
+        },
+        {
+            "id": "NSE:NIFTY50-INDEX",
+            "label": "NIFTY50 (NSE INDEX)"
         },
         {
             "id": "NFO:NIFTY-FUT-202603",
@@ -248,6 +256,13 @@
         }
     ],
     "strategies": [
+        {
+            "id": "beplus_momentum_breakout",
+            "label": "BePlus Momentum Breakout",
+            "default": true,
+            "requires_instrument": true,
+            "params": []
+        },
         {
             "id": "beplus_momentum_stable",
             "label": "BePlus Momentum Stable",
