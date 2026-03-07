@@ -275,297 +275,96 @@ async function runBacktest() {
  */
 
 /**
- * Compute helpful KPIs that are not directly returned by backend summary.
+ * Render KPI summary cards directly from backend response.
  *
  * IMPORTANT:
- * - We intentionally compute using the frontend `trades` array so UI stays backward compatible
- *   even if backend summary fields evolve.
- * - We use trade.net_pnl for profit/loss, and trade.entry_ts/exit_ts for time grouping.
+ * - Backend now returns both `summary` and `kpis`.
+ * - Frontend should NOT calculate KPI values from trades anymore.
+ * - Frontend should only format and display response values.
  */
-function computeDerivedKpis(trades, summary) {
-    const safeNum = (v) => {
-        const n = Number(v);
+function renderSummary(summary, kpis) {
+    const safeNum = (val) => {
+        const n = Number(val);
         return Number.isFinite(n) ? n : 0;
     };
 
-    const fmt2 = (v) => safeNum(v).toFixed(2);
-
-    const formatCurrency = (val) => `₹${safeNum(val).toFixed(2)}`;
-
-    const formatPercent = (val, digits = 1) => `${safeNum(val).toFixed(digits)}%`;
-
-    const dateKeyFromIso = (iso) => String(iso || '').slice(0, 10);      // YYYY-MM-DD
-    const monthKeyFromIso = (iso) => String(iso || '').slice(0, 7);     // YYYY-MM
-    const parseIsoMs = (iso) => {
-        // JS Date parses ISO with offset correctly. If parse fails, return NaN.
-        const t = Date.parse(iso);
-        return Number.isFinite(t) ? t : NaN;
-    };
-
-    const formatDuration = (ms) => {
-        const totalMin = Math.max(0, Math.round(ms / 60000));
-        if (totalMin < 60) return `${totalMin}m`;
-        const h = Math.floor(totalMin / 60);
-        const m = totalMin % 60;
-        return m === 0 ? `${h}h` : `${h}h ${m}m`;
-    };
-
-    const cleanTrades = Array.isArray(trades) ? trades.slice() : [];
-
-    // Sort by exit time (stable equity curve + streaks)
-    cleanTrades.sort((a, b) => {
-        const at = parseIsoMs(a.exit_ts);
-        const bt = parseIsoMs(b.exit_ts);
-        if (!Number.isFinite(at) && !Number.isFinite(bt)) return 0;
-        if (!Number.isFinite(at)) return 1;
-        if (!Number.isFinite(bt)) return -1;
-        return at - bt;
-    });
-
-    const totalTrades = cleanTrades.length;
-
-    // Profit Factor / Payoff / Expectancy
-    let grossProfit = 0;
-    let grossLossAbs = 0;
-    let winCount = 0;
-    let lossCount = 0;
-    let sumWins = 0;
-    let sumLossAbs = 0;
-    let sumNet = 0;
-
-    // Holding time & overnight
-    let sumHoldMs = 0;
-    let holdCount = 0;
-    let overnightCount = 0;
-
-    // Trades per day
-    const daySet = new Set();
-
-    // Monthly Net
-    const monthNet = new Map(); // YYYY-MM -> net sum
-
-    // Losing streak
-    let currentLoseStreak = 0;
-    let maxLoseStreak = 0;
-
-    // Equity curve for drawdown
-    const startingCapital = safeNum(summary && summary.starting_capital);
-    let equity = startingCapital;
-    let peakEquity = startingCapital;
-    let maxDrawdownAbs = 0;
-
-    for (const t of cleanTrades) {
-        const pnl = safeNum(t.net_pnl);
-        sumNet += pnl;
-
-        if (pnl >= 0) {
-            winCount += 1;
-            sumWins += pnl;
-            grossProfit += pnl;
-
-            currentLoseStreak = 0;
-        } else {
-            lossCount += 1;
-            const lossAbs = Math.abs(pnl);
-            sumLossAbs += lossAbs;
-            grossLossAbs += lossAbs;
-
-            currentLoseStreak += 1;
-            if (currentLoseStreak > maxLoseStreak) maxLoseStreak = currentLoseStreak;
-        }
-
-        // Drawdown calc (equity updates on trade exit)
-        equity += pnl;
-        if (equity > peakEquity) peakEquity = equity;
-        const dd = peakEquity - equity;
-        if (dd > maxDrawdownAbs) maxDrawdownAbs = dd;
-
-        // Holding time
-        const entryMs = parseIsoMs(t.entry_ts);
-        const exitMs = parseIsoMs(t.exit_ts);
-        if (Number.isFinite(entryMs) && Number.isFinite(exitMs) && exitMs >= entryMs) {
-            sumHoldMs += (exitMs - entryMs);
-            holdCount += 1;
-        }
-
-        // Overnight trades (compare date part in the original string so it matches IST wall-clock)
-        const entryDay = dateKeyFromIso(t.entry_ts);
-        const exitDay = dateKeyFromIso(t.exit_ts);
-        if (entryDay && exitDay && entryDay !== exitDay) overnightCount += 1;
-
-        // Trades/day (use exit day)
-        if (exitDay) daySet.add(exitDay);
-
-        // Monthly net (use exit month)
-        const exitMonth = monthKeyFromIso(t.exit_ts);
-        if (exitMonth) {
-            monthNet.set(exitMonth, safeNum(monthNet.get(exitMonth)) + pnl);
-        }
-    }
-
-    const profitFactor = grossLossAbs > 0 ? (grossProfit / grossLossAbs) : (grossProfit > 0 ? Infinity : 0);
-    const expectancy = totalTrades > 0 ? (sumNet / totalTrades) : 0;
-
-    const avgWin = winCount > 0 ? (sumWins / winCount) : 0;
-    const avgLossAbs = lossCount > 0 ? (sumLossAbs / lossCount) : 0;
-    const payoffRatio = avgLossAbs > 0 ? (avgWin / avgLossAbs) : (avgWin > 0 ? Infinity : 0);
-
-    // Max drawdown %
-    const maxDrawdownPct = peakEquity > 0 ? (maxDrawdownAbs / peakEquity) * 100 : 0;
-
-    // Recovery factor
-    const netProfit = safeNum(summary && summary.net_pnl);
-    const recoveryFactor = maxDrawdownAbs > 0 ? (netProfit / maxDrawdownAbs) : (netProfit > 0 ? Infinity : 0);
-
-    // Charges Ratio (Cost Efficiency)
-    const grossPnlSummary = safeNum(summary && summary.gross_pnl);
-    const totalChargesSummary = safeNum(summary && summary.total_charges);
-    
-    let chargesRatio = 0;
-    
-    if (Math.abs(grossPnlSummary) > 0) {
-        chargesRatio = (totalChargesSummary / Math.abs(grossPnlSummary)) * 100;
-    }
-
-    // Profitable months %
-    const months = Array.from(monthNet.values());
-    const totalMonths = months.length;
-    const profitableMonths = months.filter(v => safeNum(v) > 0).length;
-    const profitableMonthsPct = totalMonths > 0 ? (profitableMonths / totalMonths) * 100 : 0;
-
-    // Worst month net
-    let worstMonthNet = 0;
-    if (totalMonths > 0) {
-        worstMonthNet = Math.min(...months.map(v => safeNum(v)));
-    }
-
-    // Trades/day
-    const totalDays = daySet.size;
-    const avgTradesPerDay = totalDays > 0 ? (totalTrades / totalDays) : 0;
-
-    // Holding time
-    const avgHoldMs = holdCount > 0 ? (sumHoldMs / holdCount) : 0;
-
-    // Overnight %
-    const overnightPct = totalTrades > 0 ? (overnightCount / totalTrades) * 100 : 0;
-
-    // -----------------------
-    // Sharpe / Sortino (trade-level)
-    // -----------------------
-    // NOTE:
-    // - Uses trade "net_pnl" series (already after charges).
-    // - This is a trade-level Sharpe/Sortino (not daily). Good for comparing strategies quickly.
-    // - If you later want a more institutional metric, we can compute DAILY Sharpe from equity curve.
-
-    const pnls = cleanTrades.map(t => safeNum(t.net_pnl));
-
-    const mean = (arr) => {
-        if (!arr.length) return 0;
-        return arr.reduce((a, b) => a + b, 0) / arr.length;
-    };
-
-    const stdDev = (arr) => {
-        if (arr.length < 2) return 0;
-        const m = mean(arr);
-        const varPop = arr.reduce((s, x) => s + Math.pow(x - m, 2), 0) / arr.length;
-        return Math.sqrt(varPop);
-    };
-
-    const mPnl = mean(pnls);
-    const sdPnl = stdDev(pnls);
-
-    // Sharpe (trade-level): mean / stddev
-    const sharpeRatio = sdPnl > 0 ? (mPnl / sdPnl) : 0;
-
-    // Sortino: mean / downside deviation (only losses contribute)
-    const downside = pnls.filter(x => x < 0);
-    const downsideDev = downside.length > 0 ? Math.sqrt(downside.reduce((s, x) => s + (x * x), 0) / downside.length) : 0;
-    const sortinoRatio = downsideDev > 0 ? (mPnl / downsideDev) : 0;
-
-    return {
-        // raw
-        profit_factor: profitFactor,
-        expectancy: expectancy,
-        payoff_ratio: payoffRatio,
-        max_drawdown_abs: maxDrawdownAbs,
-        max_drawdown_pct: maxDrawdownPct,
-        recovery_factor: recoveryFactor,
-        longest_losing_streak: maxLoseStreak,
-        profitable_months_pct: profitableMonthsPct,
-        worst_month_net: worstMonthNet,
-        avg_trades_per_day: avgTradesPerDay,
-        avg_holding_ms: avgHoldMs,
-        overnight_trades_pct: overnightPct,
-        // sharpe_ratio: sharpeRatio,
-        // sortino_ratio: sortinoRatio,
-        charges_ratio: chargesRatio,
-
-        // display
-        profit_factor_display: Number.isFinite(profitFactor) ? fmt2(profitFactor) : '∞',
-        expectancy_display: formatCurrency(expectancy),
-        payoff_ratio_display: Number.isFinite(payoffRatio) ? fmt2(payoffRatio) : '∞',
-        max_drawdown_abs_display: formatCurrency(maxDrawdownAbs),
-        max_drawdown_pct_display: formatPercent(maxDrawdownPct, 1),
-        max_drawdown_display: `${formatCurrency(maxDrawdownAbs)} / ${formatPercent(maxDrawdownPct, 1)}`,
-        recovery_factor_display: Number.isFinite(recoveryFactor) ? fmt2(recoveryFactor) : '∞',
-        longest_losing_streak_display: String(maxLoseStreak || 0),
-        profitable_months_pct_display: formatPercent(profitableMonthsPct, 1),
-        worst_month_net_display: formatCurrency(worstMonthNet),
-        avg_trades_per_day_display: fmt2(avgTradesPerDay),
-        avg_holding_time_display: formatDuration(avgHoldMs),
-        overnight_trades_pct_display: formatPercent(overnightPct, 1),
-        // sharpe_ratio_display: Number.isFinite(sharpeRatio) ? fmt2(sharpeRatio) : '0.00',
-        // sortino_ratio_display: Number.isFinite(sortinoRatio) ? fmt2(sortinoRatio) : '0.00',
-        charges_ratio_display: formatPercent(chargesRatio, 1),
-    };
-}
-
-
-function renderSummary(summary, trades) {
     const formatCurrency = (val) => {
-        const n = Number(val || 0);
-        return `₹${n.toFixed(2)}`;
+        const n = Number(val);
+        if (!Number.isFinite(n)) return '₹0';
+        return `₹${Math.round(n).toLocaleString('en-IN')}`;
     };
 
-    const formatPercent = (val, digits = 1) => {
-        const n = Number(val || 0);
-        return `${n.toFixed(digits)}%`;
+    const formatPercent = (val) => {
+        const n = Number(val);
+        if (!Number.isFinite(n)) return '0%';
+        return `${n.toFixed(1)}%`;
+    };
+
+    const formatNumber = (val) => {
+        const n = Number(val);
+        if (!Number.isFinite(n)) return '-';
+        return Math.round(n).toLocaleString('en-IN');
+    };
+
+    const formatCount = (val) => {
+        const n = Number(val);
+        if (!Number.isFinite(n)) return '0';
+        return String(Math.round(n));
     };
 
     const setText = (id, text) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = text;
+        if (el) {
+            el.textContent = text;
+        }
     };
+
+    const formatRatio = (value) => {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return '-';
+        return n.toFixed(2);
+    }
+
+    const summaryData = summary || {};
+    const kpiData = kpis || {};
 
     // -----------------------
     // Existing KPI cards
     // -----------------------
-    setText('kpiTotalTrades', summary.total_trades || 0);
-    setText('kpiWinRate', formatPercent(summary.win_rate_pct));
-    setText('kpiWinningTrades', summary.winning_trades || 0);
-    setText('kpiLosingTrades', summary.losing_trades || 0);
-    setText('kpiGrossPnl', formatCurrency(summary.gross_pnl));
-    setText('kpiCharges', formatCurrency(summary.total_charges));
+    setText('kpiTotalTrades', formatCount(kpiData.total_trades ?? summaryData.total_trades ?? 0));
+    setText('kpiWinRate', formatPercent(kpiData.win_rate ?? summaryData.win_rate_pct ?? 0, 2));
+    setText('kpiWinningTrades', formatCount(kpiData.win_count ?? summaryData.winning_trades ?? 0));
+    setText('kpiLosingTrades', formatCount(kpiData.loss_count ?? summaryData.losing_trades ?? 0));
+    setText('kpiGrossPnl', formatCurrency(kpiData.gross_pnl_total ?? summaryData.gross_pnl ?? 0));
+    setText('kpiCharges', formatCurrency(kpiData.charges_total ?? summaryData.total_charges ?? 0));
+
+    // Additional gross values from backend
+    setText('kpiGrossProfit', formatCurrency(kpiData.gross_profit ?? 0));
+    setText('kpiGrossLossAbs', formatCurrency(kpiData.gross_loss_abs ?? 0));
 
     // -----------------------
     // Net PnL (₹ + % of starting capital)
     // -----------------------
-    const netPnl = Number(summary.net_pnl || 0);
-    const startingCap = Number(summary.starting_capital || 0);
-    
-    // New UI (split): kpiNetPnlAmt + kpiNetPnlPct
+    const netPnl = safeNum(kpiData.net_pnl_total ?? summaryData.net_pnl ?? 0);
+    const netPnlPct = kpiData.net_pnl_pct;
+    const netPnlCard = document.getElementById('kpiNetPnlCard');
     const netPnlAmtEl = document.getElementById('kpiNetPnlAmt');
     const netPnlPctEl = document.getElementById('kpiNetPnlPct');
-    
+
     if (netPnlAmtEl && netPnlPctEl) {
         netPnlAmtEl.textContent = formatCurrency(netPnl);
-    
+        netPnlPctEl.textContent = (netPnlPct !== undefined && netPnlPct !== null)
+            ? formatPercent(netPnlPct, 2)
+            : '-';
+
         // Keep the green/red color on the amount (same behavior as before)
         netPnlAmtEl.className = (netPnl >= 0) ? 'positive' : 'negative';
-    
-        // Percent vs initial capital (guard divide-by-zero)
-        const pct = (startingCap > 0) ? ((netPnl / startingCap) * 100) : 0;
-        netPnlPctEl.textContent = (startingCap > 0) ? formatPercent(pct, 1) : '-';
+
+        // Add background-state class for styling support
+        if (netPnlCard) {
+            netPnlCard.classList.remove('kpi-positive', 'kpi-negative');
+            netPnlCard.classList.add(netPnl >= 0 ? 'kpi-positive' : 'kpi-negative');
+        }
     } else {
         // Old UI fallback: kpiNetPnl only
         const netPnlEl = document.getElementById('kpiNetPnl');
@@ -575,40 +374,114 @@ function renderSummary(summary, trades) {
         }
     }
 
-    setText('kpiStartingCapital', formatCurrency(summary.starting_capital));
-    setText('kpiEndingCapital', formatCurrency(summary.ending_capital));
+    setText('kpiStartingCapital', formatCurrency(kpiData.starting_capital ?? summaryData.starting_capital ?? 0));
+    setText('kpiEndingCapital', formatCurrency(kpiData.ending_capital ?? summaryData.ending_capital ?? 0));
 
     // -----------------------
-    // Derived KPI cards (from trade list)
+    // Backend KPI cards
     // -----------------------
-    const derived = computeDerivedKpis(trades || [], summary);
 
     // Edge
-    setText('kpiProfitFactor', derived.profit_factor_display);
-    setText('kpiExpectancy', derived.expectancy_display);
-    setText('kpiPayoffRatio', derived.payoff_ratio_display);
+    setText('kpiProfitFactor', formatRatio(kpiData.profit_factor ?? 0, 2));
+    setText('kpiExpectancy', formatCurrency(kpiData.expectancy ?? 0));
+    setText('kpiPayoffRatio', formatRatio(kpiData.payoff_ratio ?? 0, 2));
 
     // Risk
-    setText('kpiMaxDrawdownAmt', derived.max_drawdown_abs_display);
-    setText('kpiMaxDrawdownPct', derived.max_drawdown_pct_display);
-    setText('kpiRecoveryFactor', derived.recovery_factor_display);
-    setText('kpiLongestLosingStreak', derived.longest_losing_streak_display);
-    setText('kpiChargesRatio', derived.charges_ratio_display);
+    setText('kpiMaxDrawdownAmt', formatCurrency(kpiData.max_drawdown_abs ?? 0));
+    setText('kpiMaxDrawdownPct', formatPercent(kpiData.max_drawdown_pct ?? 0, 2));
+    setText('kpiRecoveryFactor', formatRatio(kpiData.recovery_factor ?? 0, 2));
+    setText('kpiLongestLosingStreak', formatCount(kpiData.longest_losing_streak ?? 0));
+    setText('kpiChargesRatio', formatPercent(kpiData.charges_ratio_pct ?? 0, 2));
 
-    // Stability
-    setText('kpiProfitableMonthsPct', derived.profitable_months_pct_display);
-    setText('kpiWorstMonthNet', derived.worst_month_net_display);
+    // Stability / downside
+    setText('kpiProfitableMonthsPct', formatPercent(kpiData.profitable_months_pct ?? 0, 2));
+    setText('kpiWorstMonthNet', formatCurrency(kpiData.worst_month_net ?? 0));
+    setText('kpiWorstDayNet', formatCurrency(kpiData.worst_day_net ?? 0));
+    setText('kpiWorstTradeNet', formatCurrency(kpiData.worst_trade_net ?? 0));
+    setText('kpiLongestLosingDailyStreak', formatCount(kpiData.longest_losing_daily_streak ?? 0));
+    setText('kpiLongestLosingMonthlyStreak', formatCount(kpiData.longest_losing_monthly_streak ?? 0));
 
-    // Execution
-    setText('kpiAvgTradesPerDay', derived.avg_trades_per_day_display);
-    setText('kpiAvgHoldingTime', derived.avg_holding_time_display);
-    setText('kpiOvernightTradesPct', derived.overnight_trades_pct_display);
+    // Execution / behavior
+    setText('kpiAvgTradesPerDay', formatRatio(kpiData.avg_trades_per_day ?? 0, 2));
+    setText('kpiAvgHoldingTime', kpiData.avg_holding_readable ?? '-');
+    setText('kpiMaxHoldingTime', kpiData.max_holding_readable ?? '-');
+    setText('kpiOvernightTradesCount', formatCount(kpiData.overnight_trades_count ?? 0));
+    setText('kpiOvernightTradesPct', formatPercent(kpiData.overnight_trades_pct ?? 0, 2));
+    setText('kpiOvernightWinRate', formatPercent(kpiData.overnight_win_rate_pct ?? 0, 2));
 
     // // Risk-adjusted
-    // setText('kpiSharpeRatio', derived.sharpe_ratio_display);
-    // setText('kpiSortinoRatio', derived.sortino_ratio_display);
+    // setText('kpiSharpeRatio', formatNumber(kpiData.sharpe_ratio ?? 0, 2));
+    // setText('kpiSortinoRatio', formatNumber(kpiData.sortino_ratio ?? 0, 2));
 }
 
+/**
+ * Resolve display instrument name for chart heading.
+ *
+ * Priority:
+ * 1. Response summary / root data labels if present
+ * 2. Currently selected UI option text
+ * 3. Raw instrument id
+ */
+function resolveInstrumentDisplayName(data) {
+    const summary = data?.summary || {};
+
+    const directLabel =
+        summary.instrument_label ||
+        summary.instrument_name ||
+        data?.instrument_label ||
+        data?.instrument_name ||
+        null;
+
+    if (directLabel) {
+        return String(directLabel);
+    }
+
+    const instrumentId =
+        summary.instrument_id ||
+        data?.instrument_id ||
+        null;
+
+    const instrumentEl = document.getElementById('instrument');
+    if (instrumentEl && instrumentEl.tagName.toLowerCase() === 'select') {
+        const selectedIndex = instrumentEl.selectedIndex;
+
+        // First fallback: directly use the selected option text from UI
+        if (selectedIndex >= 0) {
+            const selectedOption = instrumentEl.options[selectedIndex];
+            if (selectedOption) {
+                if (instrumentId && selectedOption.value === instrumentId) {
+                    return selectedOption.textContent || instrumentId;
+                }
+
+                if (!instrumentId) {
+                    return selectedOption.textContent || '-';
+                }
+            }
+        }
+
+        // Second fallback: search all options if backend returned instrument_id
+        if (instrumentId) {
+            const matchedOption = Array.from(instrumentEl.options).find(
+                (opt) => opt.value === instrumentId
+            );
+            if (matchedOption) {
+                return matchedOption.textContent || instrumentId;
+            }
+        }
+    }
+
+    return instrumentId || '-';
+}
+
+/**
+ * Update chart section heading with instrument name.
+ */
+function renderChartHeading(data) {
+    const chartInstrumentNameEl = document.getElementById('chartInstrumentName');
+    if (!chartInstrumentNameEl) return;
+
+    chartInstrumentNameEl.textContent = resolveInstrumentDisplayName(data);
+}
 
 /**
  * Render candlestick chart with trade markers
@@ -845,6 +718,91 @@ function renderChartInModal(container, candles, trades) {
 }
 
 /**
+ * Render monthly summary table from backend response.
+ *
+ * Expected backend shape can vary slightly, so this renderer supports
+ * a few common aliases for each value to keep frontend robust.
+ */
+function renderMonthlyTable(monthlySummary) {
+    const tbody = document.getElementById('monthlyTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    const rows = Array.isArray(monthlySummary) ? monthlySummary : [];
+
+    rows.forEach((monthRow) => {
+        const row = document.createElement('tr');
+
+        const monthLabel =
+            monthRow.trade_month ??
+            monthRow.month ??
+            monthRow.month_label ??
+            '-';
+
+        const totalTrades =
+            monthRow.total_trades ??
+            0;
+
+        const winCount =
+            monthRow.total_win ??
+            monthRow.win_count ??
+            monthRow.winning_trades ??
+            monthRow.win_trade ??
+            0;
+            
+            const lossCount =
+            monthRow.total_loss ??
+            monthRow.loss_count ??
+            monthRow.losing_trades ??
+            monthRow.loss_trade ??
+            0;
+
+        const chargesPct =
+            monthRow.charges_rate ??
+            monthRow.charges_pct ??
+            0;
+
+        const grossPnl =
+            monthRow.gross_pnl_total ??
+            monthRow.gross_pnl ??
+            0;
+
+        const charges =
+            monthRow.charges_total ??
+            monthRow.charges ??
+            0;
+
+        const netPnl =
+            monthRow.net_pnl_total ??
+            monthRow.net_pnl ??
+            0;
+
+        const cumNetPnl =
+            monthRow.cum_net_pnl ??
+            monthRow.cumulative_net_pnl ??
+            monthRow.cumNetPnl ??
+            0;
+
+        const isProfitable = Number(netPnl) >= 0;
+
+        row.innerHTML = `
+            <td>${monthLabel}</td>
+            <td>${Number(totalTrades || 0)}</td>
+            <td>${Number(winCount || 0)}</td>
+            <td>${Number(lossCount || 0)}</td>
+            <td>₹${Number(grossPnl || 0).toFixed(2)}</td>
+            <td>₹${Number(charges || 0).toFixed(2)}</td>
+            <td>${Number(chargesPct || 0).toFixed(2)}%</td>
+            <td class="trade-pnl ${isProfitable ? 'positive' : 'negative'}">₹${Number(netPnl || 0).toFixed(2)}</td>
+            <td class="trade-pnl ${Number(cumNetPnl) >= 0 ? 'positive' : 'negative'}">₹${Number(cumNetPnl || 0).toFixed(2)}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+/**
  * Render trades table
  */
 function renderTradesTable(trades) {
@@ -931,13 +889,21 @@ function openSignalsModal(tradeIdx) {
 
 /**
  * Render all results
+ *
+ * IMPORTANT ORDER:
+ * 1. Summary
+ * 2. Price Chart & Trades
+ * 3. Monthly Summary
+ * 4. Trade Details
  */
 function renderResults(data) {
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('resultsContainer').classList.remove('hidden');
 
-    renderSummary(data.summary, data.trades);
+    renderSummary(data.summary, data.kpis);
+    renderChartHeading(data);
     renderChart(document.getElementById('chartContainer'), data.candles, data.trades);
+    renderMonthlyTable(data.monthly_summary);
     renderTradesTable(data.trades);
 }
 
@@ -1102,4 +1068,3 @@ document.addEventListener('keydown', (e) => {
 // Optional: Load dummy data on startup for testing (comment out for production)
 // Uncomment the line below to test the UI with dummy data
 // window.addEventListener('load', () => { state.currentData = DUMMY_RESPONSE; renderResults(DUMMY_RESPONSE); document.getElementById('deleteBtn').disabled = false; });
-// 

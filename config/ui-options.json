@@ -14,7 +14,8 @@
     "brokers": [
         {
             "id": "angelone",
-            "label": "Angel One"
+            "label": "Angel One",
+            "default": true
         }
     ],
     "instruments": [
@@ -248,7 +249,8 @@
         },
         {
             "id": "NFO:NIFTY-FUT-202603",
-            "label": "NIFTY (NFO CUR FUT)"
+            "label": "NIFTY (NFO CUR FUT)",
+            "default": true
         },
         {
             "id": "NFO:NIFTY-FUT-202604",
@@ -266,7 +268,6 @@
         {
             "id": "beplus_momentum_stable",
             "label": "BePlus Momentum Stable",
-            "default": true,
             "requires_instrument": true,
             "params": []
         },

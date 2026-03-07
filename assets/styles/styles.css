@@ -1828,6 +1828,122 @@ select.form-control {
     line-height: var(--line-height-normal);
 }
 
+/* ===== Section Title Meta ===== */
+.section-title-meta {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    margin-left: var(--space-8);
+}
+
+.section-title-meta::before {
+    content: "•";
+    margin-right: var(--space-8);
+    color: var(--color-primary);
+}
+
+/* ===== KPI Summary Grouping ===== */
+.summary-groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+}
+
+.summary-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.summary-group:not(:last-child) {
+    padding-bottom: var(--space-24);
+    border-bottom: 1px solid var(--color-card-border-inner);
+}
+
+.summary-group-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    letter-spacing: 0.2px;
+}
+
+.summary-group-title::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(var(--color-success-rgb), 0.12);
+}
+
+/* ===== KPI Card Positive / Negative States ===== */
+.kpi-card.kpi-positive {
+    background: rgba(var(--color-success-rgb), 0.12);
+    border-color: rgba(var(--color-success-rgb), 0.35);
+}
+
+.kpi-card.kpi-negative {
+    background: rgba(var(--color-error-rgb), 0.12);
+    border-color: rgba(var(--color-error-rgb), 0.35);
+}
+
+.kpi-card.kpi-positive .kpi-label,
+.kpi-card.kpi-negative .kpi-label {
+    color: var(--color-text);
+}
+
+/* ===== Monthly Table Section ===== */
+.monthly-section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-card-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
+}
+
+/* ===== Shared Table Section Padding ===== */
+.kpi-section,
+.chart-section,
+.monthly-section,
+.trades-section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-card-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
+}
+
+/* ===== Responsive: Section Meta ===== */
+@media (max-width: 768px) {
+    .section-title-meta {
+        display: block;
+        font-size: var(--font-size-sm);
+        margin-left: 0;
+        margin-top: var(--space-4);
+    }
+
+    .section-title-meta::before {
+        content: "";
+        margin-right: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .summary-groups {
+        gap: var(--space-16);
+    }
+
+    .summary-group:not(:last-child) {
+        padding-bottom: var(--space-16);
+    }
+
+    .summary-group-title {
+        font-size: var(--font-size-md);
+    }
+}
+
 /* ===== Responsive Design ===== */
 @media (max-width: 1200px) {
     .app-main {
