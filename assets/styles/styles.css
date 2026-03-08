@@ -1471,6 +1471,7 @@ select.form-control {
 .kpi-card[data-tooltip]:hover::before {
     opacity: 1;
 }
+
 .kpi-card:hover {
     border-color: var(--color-primary);
     box-shadow: var(--shadow-lg);
@@ -1481,6 +1482,13 @@ select.form-control {
 .kpi-card.kpi-primary {
     background: var(--color-bg-3);
     border-color: var(--color-success);
+}
+
+.kpi-card.kpi-primary:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    z-index: 9998;
 }
 
 .kpi-label {
